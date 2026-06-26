@@ -1141,13 +1141,53 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
               </p>
             </div>
 
-            <div className="text-center my-4">
-              <span className="text-4xl md:text-5xl font-black text-slate-950 block tracking-tight leading-none mb-1.5">
-                {loading ? '...' : getCardValue(data?.pelatihan.dilatih)}
-              </span>
-              <span className="text-xs md:text-sm font-extrabold text-slate-500 uppercase tracking-wide">
-                Kader dilatih 25 keterampilan
-              </span>
+            <div className="relative flex justify-center items-center my-3 h-[140px]">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#534AB7]" />
+                </div>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Dilatih', value: data?.pelatihan.dilatih || 0 },
+                          { name: 'Belum Dilatih', value: data?.pelatihan.belumDilatih || 0 }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={60}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        <Cell fill="#047D78" />
+                        <Cell fill="#fda4af" />
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => [Number(value).toLocaleString('id-ID'), 'Jumlah']}
+                        contentStyle={{
+                          background: 'rgba(255,255,255,0.96)',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Text inside Doughnut */}
+                  <div className="absolute flex flex-col items-center justify-center text-center">
+                    <span className="text-xl font-black text-slate-900 leading-none">
+                      {getCardValue(data?.pelatihan.dilatih)}
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1 block">
+                      Kader Dilatih
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* List of sub-skill clusters */}
@@ -1210,13 +1250,53 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
               </p>
             </div>
 
-            <div className="text-center my-4">
-              <span className="text-4xl md:text-5xl font-black text-slate-950 block tracking-tight leading-none mb-1.5">
-                {loading ? '...' : getCardValue(data?.assessment.dinilai)}
-              </span>
-              <span className="text-xs md:text-sm font-extrabold text-slate-500 uppercase tracking-wide">
-                Kader dinilai 25 keterampilan
-              </span>
+            <div className="relative flex justify-center items-center my-3 h-[140px]">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#534AB7]" />
+                </div>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Dinilai', value: data?.assessment.dinilai || 0 },
+                          { name: 'Belum Diasesmen', value: data?.assessment.belumDinilai || 0 }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={45}
+                        outerRadius={60}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        <Cell fill="#534AB7" />
+                        <Cell fill="#fda4af" />
+                      </Pie>
+                      <Tooltip
+                        formatter={(value) => [Number(value).toLocaleString('id-ID'), 'Jumlah']}
+                        contentStyle={{
+                          background: 'rgba(255,255,255,0.96)',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Text inside Doughnut */}
+                  <div className="absolute flex flex-col items-center justify-center text-center">
+                    <span className="text-xl font-black text-slate-900 leading-none">
+                      {getCardValue(data?.assessment.dinilai)}
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1 block">
+                      Kader Dinilai
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* List of sub-skill clusters */}
