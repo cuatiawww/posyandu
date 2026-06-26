@@ -17,9 +17,9 @@ type LoginResponse = {
 
 // Stat items shown on the left hero panel
 const heroStats = [
-  { value: '10.123', label: 'Puskesmas Terdaftar', icon: Activity },
-  { value: '34', label: 'Provinsi Terevaluasi', icon: MapPin },
-  { value: '72%', label: 'Tingkat Kepatuhan', icon: ShieldCheck },
+  { value: '303.713', label: 'Posyandu Terdaftar', icon: Activity },
+  { value: '38', label: 'Provinsi Terdata', icon: MapPin },
+  { value: '74%', label: 'Tingkat Keaktifan', icon: ShieldCheck },
 ]
 
 export default function LoginPage() {
@@ -134,7 +134,7 @@ export default function LoginPage() {
         {/* Background image */}
         <Image
           src="/pkk.png"
-          alt="Asistensi Kinerja Puskesmas"
+          alt="Tatakelola Kegiatan dan Kader Posyandu"
           fill
           priority
           sizes="60vw"
@@ -170,12 +170,12 @@ export default function LoginPage() {
           {/* Main copy */}
           <div className="max-w-xl pb-4">
             <h1 className="mt-4 text-[42px] font-extrabold leading-[1.1] tracking-tight text-white xl:text-[52px]">
-              Indikator Penilaian<br />
-              <span className="text-teal-300">Kinerja Puskesmas</span>
+              Tatakelola Kegiatan<br />
+              <span className="text-teal-300">&amp; Kader Posyandu</span>
             </h1>
             <p className="mt-4 text-[15px] leading-relaxed text-teal-100/80 xl:text-[16px]">
               Sistem pemantauan terpadu untuk melihat capaian, sebaran, dan
-              perkembangan Puskesmas di seluruh wilayah Indonesia.
+              perkembangan Posyandu di seluruh wilayah Indonesia.
             </p>
 
             {/* Stats row */}
@@ -228,10 +228,10 @@ export default function LoginPage() {
             {/* Header */}
             <div className="mb-7">
               <h2 className="mt-3 text-[28px] font-extrabold leading-tight tracking-tight text-slate-900 sm:text-[32px]">
-                Asistensi Kinerja Puskesmas
+                Tatakelola Posyandu
               </h2>
               <p className="mt-1.5 text-[14px] text-slate-500">
-                Silakan masuk untuk mengakses data kinerja Puskesmas.
+                Silakan masuk untuk mengakses data tatakelola kegiatan dan kader Posyandu.
               </p>
             </div>
 

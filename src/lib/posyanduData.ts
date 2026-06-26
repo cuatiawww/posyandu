@@ -154,13 +154,13 @@ export function getPosyanduStats(
     const valid = Math.round(p.valid * yearFactor)
     
     // Nalar logic: Active is a subset of Valid, Lifecycle Active is a subset of Active
-    // We vary rates slightly per province to make it realistic (e.g. DKI and Bali have higher rates)
-    let activeRate = 0.72 + (p.name.length % 7) * 0.015
-    let lifecycleRate = 0.48 + (p.name.length % 5) * 0.02
+    // We vary rates slightly per province to make it realistic (e.g. DKI, DIY, Bali have higher rates meeting target thresholds)
+    let activeRate = 0.65 + (p.name.length % 5) * 0.025
+    let lifecycleRate = 0.60 + (p.name.length % 5) * 0.02
     
     if (p.name === 'DKI JAKARTA' || p.name === 'DI YOGYAKARTA' || p.name === 'BALI') {
-      activeRate += 0.08
-      lifecycleRate += 0.12
+      activeRate = 0.85 + (p.name.length % 3) * 0.02
+      lifecycleRate = 0.88 + (p.name.length % 3) * 0.02
     }
 
     const aktif = Math.round(valid * activeRate * periodFactor)

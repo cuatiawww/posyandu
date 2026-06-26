@@ -411,7 +411,7 @@ export default function RegisterPage() {
                 Daftar sebagai Masyarakat
               </h2>
               <p className="mt-1 text-slate-500 text-sm">
-                Lengkapi data diri Anda untuk pengajuan akun Asistensi Kinerja Puskesmas.
+                Lengkapi data diri Anda untuk pengajuan akun Tatakelola Kegiatan dan Kader Posyandu.
               </p>
             </div>
 
@@ -843,7 +843,7 @@ export default function RegisterPage() {
                   >
                     Syarat & Ketentuan
                   </button>{' '}
-                  yang berlaku untuk pendaftaran dan penggunaan akun Asistensi Kinerja Puskesmas.
+                  yang berlaku untuk pendaftaran dan penggunaan akun Tatakelola Kegiatan dan Kader Posyandu.
                 </label>
               </div>
 
@@ -973,7 +973,7 @@ export default function RegisterPage() {
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-6 py-5 text-sm text-slate-600 space-y-4 leading-relaxed scrollbar-thin">
               <p>
-                Selamat datang di <strong>Asistensi Kinerja Puskesmas</strong>. Dengan mendaftar dan menggunakan sistem ini, Anda setuju untuk mematuhi ketentuan di bawah ini:
+                Selamat datang di <strong>Tatakelola Kegiatan dan Kader Posyandu</strong>. Dengan mendaftar dan menggunakan sistem ini, Anda setuju untuk mematuhi ketentuan di bawah ini:
               </p>
 
               <h4 className="font-extrabold text-slate-800 text-[13px] uppercase tracking-wider">1. Hak Akses & Akun</h4>
@@ -983,7 +983,7 @@ export default function RegisterPage() {
 
               <h4 className="font-extrabold text-slate-800 text-[13px] uppercase tracking-wider">2. Penggunaan Data</h4>
               <p className="pl-3 border-l-2 border-teal-500 text-slate-600">
-                Data sarana fasilitas kesehatan, wilayah BPS, dan laporan bencana yang diperoleh melalui sistem ini hanya boleh digunakan sesuai tujuan akses yang diajukan. Dilarang menyebarkan, memanipulasi, atau menyalahgunakan data yang dapat membahayakan privasi atau operasional fasilitas kesehatan.
+                Data posyandu, data kader, wilayah administrasi, dan laporan kegiatan yang diperoleh melalui sistem ini hanya boleh digunakan sesuai tujuan akses yang diajukan. Dilarang menyebarkan, memanipulasi, atau menyalahgunakan data yang dapat membahayakan privasi kader atau operasional Posyandu.
               </p>
 
               <h4 className="font-extrabold text-slate-800 text-[13px] uppercase tracking-wider">3. Verifikasi & Validasi</h4>

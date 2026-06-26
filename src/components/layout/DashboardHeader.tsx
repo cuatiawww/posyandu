@@ -10,10 +10,8 @@ import {
   Bell,
   ChevronDown,
   Download,
-  Flame,
   Home,
   LogOut,
-  MapPinned,
   Menu,
   Settings,
   ShieldCheck,
@@ -55,44 +53,44 @@ const sidebarMenu = [
 const notificationsData = [
   {
     id: 1,
-    title: 'Krisis Banjir Bandang',
-    description: 'Terjadi banjir bandang di Bandung. 12 korban luka, Puskesmas tergenang.',
+    title: 'Sertifikasi Kader Utama',
+    description: '5 Kader Posyandu di Sleman berhasil menyelesaikan sertifikasi tingkat Utama.',
     time: '2m',
-    icon: Flame,
-    iconBg: 'bg-red-50 text-red-600 border-red-100',
+    icon: ShieldCheck,
+    iconBg: 'bg-teal-50 text-teal-600 border-teal-100',
     unread: true,
   },
   {
     id: 2,
-    title: 'Siaga Gempa Bumi',
-    description: 'Gempa M 5.6 di Karangasem, Bali. 5 korban jiwa dilaporkan.',
+    title: 'Laporan Bulanan Masuk',
+    description: 'Kecamatan Tapa, Bone Bolango telah mengirimkan laporan keaktifan Posyandu Triwulan II.',
     time: '15m',
-    icon: ShieldCheck,
-    iconBg: 'bg-amber-50 text-amber-600 border-amber-100',
+    icon: LayoutDashboard,
+    iconBg: 'bg-blue-50 text-blue-600 border-blue-100',
     unread: true,
   },
   {
     id: 3,
-    title: 'Peringatan KLB Diare',
-    description: 'Kasus diare Tangerang melebihi ambang batas normal.',
+    title: 'Keaktifan Kunjungan Rumah',
+    description: '3 wilayah Kelurahan di Gorontalo melaporkan tingkat kunjungan rumah di bawah target 60%.',
     time: '1j',
     icon: Bell,
-    iconBg: 'bg-purple-50 text-purple-600 border-purple-100',
+    iconBg: 'bg-amber-50 text-amber-600 border-amber-100',
     unread: true,
   },
   {
     id: 4,
-    title: 'Evakuasi Tanah Longsor',
-    description: 'Evakuasi pengungsi mandiri sedang berlangsung di posko Bogor.',
+    title: 'Pembekalan Kader Purwa',
+    description: 'Jadwal pembekalan kader tingkat Purwa se-DKI Jakarta dijadwalkan pada 2 Juli 2026.',
     time: '3j',
-    icon: MapPinned,
-    iconBg: 'bg-blue-50 text-blue-600 border-blue-100',
+    icon: Users,
+    iconBg: 'bg-indigo-50 text-indigo-600 border-indigo-100',
     unread: false,
   },
   {
     id: 5,
-    title: 'Logistik Darurat NTT',
-    description: 'Puskesmas melaporkan kekurangan stok obat-obatan darurat.',
+    title: 'Logistik PMT & Antropometri',
+    description: 'Distribusi alat timbang standar dan PMT balita telah sampai di Posyandu Dago.',
     time: '1h',
     icon: Settings,
     iconBg: 'bg-teal-50 text-teal-600 border-teal-100',
@@ -132,7 +130,7 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
               />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-black tracking-wide text-slate-950">ASISTENSI PUSKESMAS</p>
+              <p className="text-lg font-black tracking-wide text-slate-950">TATAKELOLA POSYANDU</p>
               <p className="mt-0.5 text-sm font-extrabold text-slate-600">Kementerian Kesehatan RI</p>
             </div>
           </div>
@@ -226,8 +224,8 @@ export default function DashboardHeader({ onToggleSidebar }: DashboardHeaderProp
   }, [user])
   const initialName = isAuthenticated ? (user?.nama_lengkap || user?.username || 'Pengguna') : 'Tamu (Guest)'
   const roleName = isAuthenticated ? (user?.level_name || (user?.level_user_id === 1 ? 'Super Administrator' : 'Admin')) : 'Akses Publik'
-  const userEmail = isAuthenticated ? (user?.email || `${user?.username || 'admin'}@puskesmas.go.id`) : 'guest@puskesmas.go.id'
-  const accessLabel = isAuthenticated ? (user?.wilayah_scope?.access_label || 'Pusat pemantauan nasional Puskesmas') : 'Pusat pemantauan publik Puskesmas'
+  const userEmail = isAuthenticated ? (user?.email || `${user?.username || 'admin'}@posyandu.go.id`) : 'guest@posyandu.go.id'
+  const accessLabel = isAuthenticated ? (user?.wilayah_scope?.access_label || 'Pusat pemantauan nasional Posyandu') : 'Pusat pemantauan publik Posyandu'
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()

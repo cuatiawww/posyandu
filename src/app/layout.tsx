@@ -11,8 +11,8 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Dashboard Puskes - Kemenkes RI",
-  description: "Dashboard Puskes untuk pemantauan data kesehatan Kementerian Kesehatan Republik Indonesia",
+  title: "Dashboard Posyandu - Kemenkes RI",
+  description: "Dashboard Tatakelola Kegiatan dan Kader Posyandu Kementerian Kesehatan Republik Indonesia",
 };
 
 export default function RootLayout({

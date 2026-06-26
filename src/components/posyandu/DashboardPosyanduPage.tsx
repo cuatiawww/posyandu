@@ -25,6 +25,8 @@ import {
   Home,
   CheckCircle2,
   Download,
+  BarChart3,
+  Table as TableIcon,
 } from 'lucide-react'
 import {
   PieChart,
@@ -42,6 +44,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts'
 import { useAuthStore } from '@/lib/authStore'
 import FilterDropdownBar, { type FilterSummary } from '@/components/landing/FilterDropdownBar'
@@ -62,6 +65,71 @@ const DisasterMap = dynamic(() => import('./DisasterMap'), {
 })
 
 const COLORS = ['#14b8a6', '#f59e0b', '#ef4444', '#6366f1', '#a855f7']
+
+const CustomPosyanduTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload
+    
+    const activeStatusColor = data.statusAktif === 'MEMENUHI' 
+      ? 'text-emerald-600' 
+      : 'text-red-600'
+      
+    const lifecycleStatusColor = data.statusSiklusHidup === 'MEMENUHI' 
+      ? 'text-emerald-600' 
+      : 'text-red-600'
+
+    return (
+      <div className="bg-white/95 border border-slate-200 rounded-2xl shadow-xl p-4 max-w-[320px] backdrop-blur-sm text-xs font-bold text-slate-800">
+        <p className="text-sm font-black text-slate-900 border-b border-slate-100 pb-2 mb-3 uppercase tracking-wide">
+          {data.nama}
+        </p>
+
+        {/* General stats */}
+        <div className="mb-3 flex justify-between items-center text-slate-700">
+          <span>Jumlah Posyandu Valid:</span>
+          <span className="font-extrabold text-slate-900">{data.valid.toLocaleString('id-ID')}</span>
+        </div>
+
+        {/* Keaktifan breakdown */}
+        <div className="mb-3 border-t border-slate-100 pt-2">
+          <div className="flex items-center justify-between text-teal-900 mb-1">
+            <span className="font-extrabold uppercase text-[10px] tracking-wider">Keaktifan Posyandu</span>
+            <span className="font-black text-sm text-teal-700">
+              {data.aktif.toLocaleString('id-ID')}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-slate-600 font-bold pl-1">
+            <span>Persentase:</span>
+            <span className="text-right text-slate-950">{data.pctAktif}%</span>
+            <span>Status (≥80%):</span>
+            <span className={`text-right font-black ${activeStatusColor}`}>
+              {data.statusAktif === 'MEMENUHI' ? 'MEMENUHI' : 'BELUM MEMENUHI'}
+            </span>
+          </div>
+        </div>
+
+        {/* Siklus Hidup breakdown */}
+        <div className="border-t border-slate-100 pt-2">
+          <div className="flex items-center justify-between text-indigo-900 mb-1">
+            <span className="font-extrabold uppercase text-[10px] tracking-wider">Siklus Hidup Aktif</span>
+            <span className="font-black text-sm text-indigo-700">
+              {data.siklusHidup.toLocaleString('id-ID')}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-slate-600 font-bold pl-1">
+            <span>Persentase:</span>
+            <span className="text-right text-slate-950">{data.pctSiklusHidup}%</span>
+            <span>Status (≥75%):</span>
+            <span className={`text-right font-black ${lifecycleStatusColor}`}>
+              {data.statusSiklusHidup === 'MEMENUHI' ? 'MEMENUHI' : 'BELUM MEMENUHI'}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  return null
+}
 
 export default function DashboardPosyanduPage() {
   const { token, isInitialized, user } = useAuthStore()
@@ -94,6 +162,31 @@ export default function DashboardPosyanduPage() {
 
   // Table search & export states
   const [matrixSearchQuery, setMatrixSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table')
+  const [visibleSeries, setVisibleSeries] = useState<Record<string, boolean>>({
+    pctAktif: true,
+    pctSiklusHidup: true,
+  })
+
+  const handleLegendClick = (entry: any) => {
+    const dataKey = entry.dataKey
+    if (dataKey) {
+      setVisibleSeries((prev) => ({
+        ...prev,
+        [dataKey]: !prev[dataKey],
+      }))
+    }
+  }
+
+  const formatLegendText = (value: any, entry: any) => {
+    const dataKey = entry.dataKey
+    const isVisible = visibleSeries[dataKey] ?? true
+    return (
+      <span className={`select-none cursor-pointer transition-all ${isVisible ? 'text-[#0f172a] font-bold' : 'text-slate-400 font-normal line-through'}`}>
+        {value}
+      </span>
+    )
+  }
 
   // Debounced search queries
   useEffect(() => {
@@ -1278,6 +1371,25 @@ Tidak ada data Posyandu terdaftar untuk wilayah ini.`)
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
 
+              {/* Toggle Chart/Table Button */}
+              <button
+                onClick={() => setViewMode(viewMode === 'table' ? 'chart' : 'table')}
+                className="flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 h-11 text-sm font-bold shadow-sm transition active:scale-[0.98] cursor-pointer"
+                title={viewMode === 'table' ? 'Lihat Visualisasi Chart' : 'Lihat Matriks Tabel'}
+              >
+                {viewMode === 'table' ? (
+                  <>
+                    <BarChart3 className="h-4 w-4 text-[#047D78]" />
+                    <span>Visualisasi Chart</span>
+                  </>
+                ) : (
+                  <>
+                    <TableIcon className="h-4 w-4 text-[#047D78]" />
+                    <span>Matriks Tabel</span>
+                  </>
+                )}
+              </button>
+
               {/* Export CSV Button */}
               <button
                 onClick={handleExportMatrixCSV}
@@ -1289,88 +1401,200 @@ Tidak ada data Posyandu terdaftar untuk wilayah ini.`)
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm md:text-base border-collapse text-slate-800">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-850 font-black uppercase tracking-wider">
-                  <th className="py-3.5 px-4 w-12 text-center">#</th>
-                  <th className="py-3.5 px-4">Provinsi / Wilayah</th>
-                  <th className="py-3.5 px-4 text-center">Jumlah Posyandu Valid</th>
-                  <th className="py-3.5 px-4 text-center">Jumlah Posyandu Aktif</th>
-                  <th className="py-3.5 px-4 text-center">Persentase Posyandu Aktif</th>
-                  <th className="py-3.5 px-4 text-center">Status Posyandu Aktif</th>
-                  <th className="py-3.5 px-4 text-center">Jumlah Posyandu Siklus Hidup Yang Aktif</th>
-                  <th className="py-3.5 px-4 text-center">Persentase Posyandu Siklus Hidup Yang Aktif</th>
-                  <th className="py-3.5 px-4 text-center">Status Posyandu Siklus Hidup Yang Aktif</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-semibold text-slate-750">
-                {loading ? (
-                  <tr>
-                    <td colSpan={9} className="py-8 text-center text-slate-400 italic">
-                      Memuat data matriks...
-                    </td>
+          {viewMode === 'table' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm md:text-base border-collapse text-slate-800">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-850 font-black uppercase tracking-wider">
+                    <th className="py-3.5 px-4 w-12 text-center">#</th>
+                    <th className="py-3.5 px-4">Provinsi / Wilayah</th>
+                    <th className="py-3.5 px-4 text-center">Jumlah Posyandu Valid</th>
+                    <th className="py-3.5 px-4 text-center">Jumlah Posyandu Aktif</th>
+                    <th className="py-3.5 px-4 text-center">Persentase Posyandu Aktif</th>
+                    <th className="py-3.5 px-4 text-center">Status Posyandu Aktif</th>
+                    <th className="py-3.5 px-4 text-center">Jumlah Posyandu Siklus Hidup Yang Aktif</th>
+                    <th className="py-3.5 px-4 text-center">Persentase Posyandu Siklus Hidup Yang Aktif</th>
+                    <th className="py-3.5 px-4 text-center">Status Posyandu Siklus Hidup Yang Aktif</th>
                   </tr>
-                ) : !data?.wilayahBreakdown || data.wilayahBreakdown.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="py-8 text-center text-slate-400 italic">
-                      Tidak ada data wilayah untuk filter terpilih.
-                    </td>
-                  </tr>
-                ) : filteredMatrixData.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="py-8 text-center text-slate-400 italic font-semibold">
-                      Tidak ada data wilayah yang cocok dengan "{matrixSearchQuery}".
-                    </td>
-                  </tr>
-                ) : (
-                  filteredMatrixData.map((wil, idx) => {
-                    const activeBadgeColor = wil.statusAktif === 'MEMENUHI' 
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-150' 
-                      : 'bg-red-50 text-red-700 border-red-150'
-                    
-                    const lifecycleBadgeColor = wil.statusSiklusHidup === 'MEMENUHI' 
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-150' 
-                      : 'bg-red-50 text-red-700 border-red-150'
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-semibold text-slate-750">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={9} className="py-8 text-center text-slate-400 italic">
+                        Memuat data matriks...
+                      </td>
+                    </tr>
+                  ) : !data?.wilayahBreakdown || data.wilayahBreakdown.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="py-8 text-center text-slate-400 italic">
+                        Tidak ada data wilayah untuk filter terpilih.
+                      </td>
+                    </tr>
+                  ) : filteredMatrixData.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="py-8 text-center text-slate-400 italic font-semibold">
+                        Tidak ada data wilayah yang cocok dengan "{matrixSearchQuery}".
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredMatrixData.map((wil, idx) => {
+                      const activeBadgeColor = wil.statusAktif === 'MEMENUHI' 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-150' 
+                        : 'bg-red-50 text-red-700 border-red-150'
+                      
+                      const lifecycleBadgeColor = wil.statusSiklusHidup === 'MEMENUHI' 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-150' 
+                        : 'bg-red-50 text-red-700 border-red-150'
 
-                    return (
-                      <tr key={idx} className="hover:bg-slate-100/70 transition-colors odd:bg-slate-50">
-                        <td className="py-4 px-4 text-center text-slate-700 font-bold">{idx + 1}</td>
-                        <td className="py-4 px-4 font-extrabold text-slate-950 uppercase tracking-wide">
-                          {wil.nama}
-                        </td>
-                        <td className="py-4 px-4 text-center font-extrabold text-slate-950">
-                          {wil.valid.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-4 text-center text-teal-800 font-extrabold">
-                          {wil.aktif.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-4 text-center font-black text-slate-950">
-                          {wil.pctAktif}%
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`inline-flex items-center rounded-lg border px-3.5 py-1.5 text-xs font-black uppercase tracking-wide ${activeBadgeColor}`}>
-                            {wil.statusAktif === 'MEMENUHI' ? 'Memenuhi' : 'Tidak Memenuhi'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-center text-emerald-800 font-extrabold">
-                          {wil.siklusHidup.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-4 text-center font-black text-slate-950">
-                          {wil.pctSiklusHidup}%
-                        </td>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`inline-flex items-center rounded-lg border px-3.5 py-1.5 text-xs font-black uppercase tracking-wide ${lifecycleBadgeColor}`}>
-                            {wil.statusSiklusHidup === 'MEMENUHI' ? 'Memenuhi' : 'Tidak Memenuhi'}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                      return (
+                        <tr key={idx} className="hover:bg-slate-100/70 transition-colors odd:bg-slate-50">
+                          <td className="py-4 px-4 text-center text-slate-700 font-bold">{idx + 1}</td>
+                          <td className="py-4 px-4 font-extrabold text-slate-950 uppercase tracking-wide">
+                            {wil.nama}
+                          </td>
+                          <td className="py-4 px-4 text-center font-extrabold text-slate-950">
+                            {wil.valid.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-4 text-center text-teal-800 font-extrabold">
+                            {wil.aktif.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-4 text-center font-black text-slate-950">
+                            {wil.pctAktif}%
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <span className={`inline-flex items-center rounded-lg border px-3.5 py-1.5 text-xs font-black uppercase tracking-wide ${activeBadgeColor}`}>
+                              {wil.statusAktif === 'MEMENUHI' ? 'Memenuhi' : 'Tidak Memenuhi'}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 text-center text-emerald-800 font-extrabold">
+                            {wil.siklusHidup.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-4 text-center font-black text-slate-950">
+                            {wil.pctSiklusHidup}%
+                          </td>
+                          <td className="py-4 px-4 text-center">
+                            <span className={`inline-flex items-center rounded-lg border px-3.5 py-1.5 text-xs font-black uppercase tracking-wide ${lifecycleBadgeColor}`}>
+                              {wil.statusSiklusHidup === 'MEMENUHI' ? 'Memenuhi' : 'Tidak Memenuhi'}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="w-full py-4">
+              {loading ? (
+                <div className="h-[400px] flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#047D78]" />
+                </div>
+              ) : !filteredMatrixData || filteredMatrixData.length === 0 ? (
+                <div className="h-[400px] flex items-center justify-center text-slate-500 italic">
+                  Tidak ada data wilayah untuk filter terpilih.
+                </div>
+              ) : (
+                <div className="w-full bg-slate-50/50 rounded-2xl border border-slate-100 p-4 sm:p-6">
+                  <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h4 className="text-base font-black text-slate-900 uppercase">
+                        Komparasi Keaktifan vs Siklus Hidup Posyandu Terintegrasi
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5 font-bold">
+                        Grafik batang komparatif status keaktifan posyandu (Target ≥80%) dan integrasi Siklus Hidup (Target ≥75%) untuk setiap wilayah.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-[480px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={filteredMatrixData}
+                        margin={{ top: 20, right: 10, left: -10, bottom: 60 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          dataKey="nama"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fill: '#334155', fontSize: 11, fontWeight: 700 }}
+                          interval={0}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }}
+                          unit="%"
+                          domain={[0, 100]}
+                        />
+                        <Tooltip content={<CustomPosyanduTooltip />} />
+                        <Legend
+                          verticalAlign="top"
+                          height={45}
+                          iconType="circle"
+                          onClick={handleLegendClick}
+                          formatter={formatLegendText}
+                          wrapperStyle={{
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            paddingBottom: '20px',
+                          }}
+                        />
+                        
+                        <ReferenceLine
+                          y={80}
+                          stroke="#ef4444"
+                          strokeDasharray="4 4"
+                          strokeWidth={2}
+                          label={{
+                            value: 'Target Keaktifan ≥80%',
+                            position: 'insideBottomRight',
+                            fill: '#ef4444',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                          }}
+                        />
+                        <ReferenceLine
+                          y={75}
+                          stroke="#10b981"
+                          strokeDasharray="4 4"
+                          strokeWidth={2}
+                          label={{
+                            value: 'Target Siklus Hidup ≥75%',
+                            position: 'insideBottomLeft',
+                            fill: '#10b981',
+                            fontSize: 10,
+                            fontWeight: 'bold',
+                          }}
+                        />
+
+                        <Bar
+                          name="Persentase Posyandu Aktif"
+                          dataKey="pctAktif"
+                          fill="#047D78"
+                          radius={[4, 4, 0, 0]}
+                          hide={!visibleSeries.pctAktif}
+                          maxBarSize={30}
+                        />
+                        <Bar
+                          name="Persentase Siklus Hidup Aktif"
+                          dataKey="pctSiklusHidup"
+                          fill="#8c5ce7"
+                          radius={[4, 4, 0, 0]}
+                          hide={!visibleSeries.pctSiklusHidup}
+                          maxBarSize={30}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </article>
       </section>
 
