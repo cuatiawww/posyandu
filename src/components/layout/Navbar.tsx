@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, LayoutDashboard, MapPinned, Menu, X } from 'lucide-react'
+import { ChevronRight, LayoutDashboard, Menu, X } from 'lucide-react'
 
 const menuItems = [
   {
@@ -13,20 +13,6 @@ const menuItems = [
     href: '/',
     icon: LayoutDashboard,
     match: (pathname: string) => pathname === '/',
-  },
-  {
-    label: 'PROVINSI',
-    shortLabel: 'Provinsi',
-    href: '/pscbaru',
-    icon: MapPinned,
-    match: (pathname: string) => pathname.startsWith('/pscbaru'),
-  },
-  {
-    label: 'PK3D DKI JAKARTA',
-    shortLabel: 'DKI Jakarta',
-    href: '/pk3d/dki-jakarta',
-    icon: MapPinned,
-    match: (pathname: string) => pathname.startsWith('/pk3d/dki-jakarta'),
   },
 ]
 
@@ -57,10 +43,10 @@ export default function Navbar() {
                   className="h-11 w-auto"
                 />
                 <div className="w-px h-8 bg-gray-300" />
-                <Image src="/psc.png" alt="Dashboard Puskes" width={50} height={50} className="h-11 w-auto" />
+                <Image src="/posyandu.svg" alt="Dashboard Posyandu" width={50} height={50} className="h-11 w-auto" />
               </div>
               <div className="hidden xl:block leading-tight">
-                <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary">Dashboard Puskes</p>
+                <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary">Dashboard Posyandu</p>
                 <p className="text-xs text-gray-500">Informasi pemantauan data kesehatan nasional</p>
               </div>
             </Link>
@@ -100,10 +86,10 @@ export default function Navbar() {
                   className="h-9 w-auto"
                 />
                 <div className="h-6 w-px bg-gray-300" />
-                <Image src="/psc.png" alt="Dashboard Puskes" width={40} height={40} className="h-9 w-auto" />
+                <Image src="/posyandu.svg" alt="Dashboard Posyandu" width={40} height={40} className="h-9 w-auto" />
               </div>
               <div className="min-w-0">
-                <p className="truncate text-xs font-bold uppercase tracking-[0.16em] text-primary">Dashboard Puskes</p>
+                <p className="truncate text-xs font-bold uppercase tracking-[0.16em] text-primary">Dashboard Posyandu</p>
                 <p className="truncate text-[11px] text-gray-500">{activeItem.shortLabel}</p>
               </div>
             </Link>

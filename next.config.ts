@@ -7,6 +7,9 @@ const backendBaseUrl = (
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['svg-captcha'],
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'recharts'],
+  },
   async rewrites() {
     return {
       fallback: [
