@@ -1191,7 +1191,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
             </div>
 
             {/* List of sub-skill clusters */}
-            <div className="space-y-2 mt-4 max-h-[220px] overflow-y-auto pr-1">
+            <div className="space-y-2 mt-4">
               {!loading && data?.pelatihan.subgroups.map((sg, idx) => (
                 <div key={idx} className="bg-slate-50/70 hover:bg-slate-50 border border-slate-100 rounded-xl p-2.5 transition-colors">
                   <div className="flex justify-between items-start gap-2 mb-1">
@@ -1300,7 +1300,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
             </div>
 
             {/* List of sub-skill clusters */}
-            <div className="space-y-2 mt-4 max-h-[220px] overflow-y-auto pr-1">
+            <div className="space-y-2 mt-4">
               {!loading && data?.assessment.subgroups.map((sg, idx) => (
                 <div key={idx} className="bg-slate-50/70 hover:bg-slate-50 border border-slate-100 rounded-xl p-2.5 transition-colors">
                   <div className="flex justify-between items-start gap-2 mb-1">
@@ -1334,198 +1334,207 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
           </div>
         </article>
 
-        {/* Card 3: Kelulusan / Sertifikasi */}
-        <article
-          className="border border-[#cdcdcd] bg-white p-6 shadow-[0_10px_30px_rgba(15,118,110,0.04)] flex flex-col justify-between"
-          style={{
-            borderTopLeftRadius: '17px',
-            borderTopRightRadius: '17px',
-            borderBottomRightRadius: '22px',
-            borderBottomLeftRadius: '17px',
-          }}
-        >
-          <div>
-            <div className="border-b border-slate-100 pb-3 mb-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base md:text-lg font-black text-slate-900 uppercase tracking-wider">
-                  Kelulusan & Sertifikasi
-                </h3>
-                <span className="rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs md:text-sm font-black text-purple-800 uppercase">
-                  Hasil Akhir
-                </span>
-              </div>
-              <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 leading-relaxed">
-                Distribusi tingkat kemahiran tanda kelulusan sertifikasi kader (Purwa, Madya, Utama).
-              </p>
-            </div>
-
-            <div className="space-y-4 mt-6">
-              {/* Utama */}
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 font-extrabold text-lg">
-                  🏆
+        {/* Column 3: Stacked Kelulusan & Masa Bakti */}
+        <div className="flex flex-col gap-6 h-full justify-between">
+          {/* Card 3: Kelulusan / Sertifikasi */}
+          <article
+            className="border border-[#cdcdcd] bg-white p-5 shadow-[0_10px_30px_rgba(15,118,110,0.04)] flex flex-col justify-between rounded-2xl flex-1"
+          >
+            <div>
+              <div className="border-b border-slate-100 pb-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base md:text-lg font-black text-slate-900 uppercase tracking-wider">
+                    Kelulusan & Sertifikasi
+                  </h3>
+                  <span className="rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs md:text-sm font-black text-purple-800 uppercase">
+                    Hasil Akhir
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm md:text-base font-black text-slate-900 uppercase">Kader Utama</span>
-                    <span className="text-sm md:text-base font-black text-amber-600">
-                      {loading ? '...' : `${getCardValue(data?.kelulusan.utama)} (${data?.kelulusan.utamaPct}%)`}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${data?.kelulusan.utamaPct}%` }} />
-                  </div>
-                </div>
+                <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 leading-relaxed">
+                  Distribusi tingkat kemahiran tanda kelulusan sertifikasi kader (Purwa, Madya, Utama).
+                </p>
               </div>
 
-              {/* Madya */}
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-extrabold text-lg">
-                  🎖️
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm md:text-base font-black text-slate-900 uppercase">Kader Madya</span>
-                    <span className="text-sm md:text-base font-black text-blue-700">
-                      {loading ? '...' : `${getCardValue(data?.kelulusan.madya)} (${data?.kelulusan.madyaPct}%)`}
-                    </span>
+              <div className="space-y-4 mt-6">
+                {/* Utama */}
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 font-extrabold text-lg">
+                    🏆
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-gradient-to-r from-blue-400 to-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${data?.kelulusan.madyaPct}%` }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm md:text-base font-black text-slate-900 uppercase">Kader Utama</span>
+                      <span className="text-sm md:text-base font-black text-amber-600">
+                        {loading ? '...' : `${getCardValue(data?.kelulusan.utama)} (${data?.kelulusan.utamaPct}%)`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-gradient-to-r from-amber-400 to-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${data?.kelulusan.utamaPct}%` }} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Purwa */}
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-650 font-extrabold text-lg">
-                  🏅
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm md:text-base font-black text-slate-900 uppercase">Kader Purwa</span>
-                    <span className="text-sm md:text-base font-black text-teal-700">
-                      {loading ? '...' : `${getCardValue(data?.kelulusan.purwa)} (${data?.kelulusan.purwaPct}%)`}
-                    </span>
+                {/* Madya */}
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-extrabold text-lg">
+                    🎖️
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-gradient-to-r from-teal-400 to-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${data?.kelulusan.purwaPct}%` }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm md:text-base font-black text-slate-900 uppercase">Kader Madya</span>
+                      <span className="text-sm md:text-base font-black text-blue-700">
+                        {loading ? '...' : `${getCardValue(data?.kelulusan.madya)} (${data?.kelulusan.madyaPct}%)`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-gradient-to-r from-blue-400 to-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${data?.kelulusan.madyaPct}%` }} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Belum Ada Status */}
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 font-extrabold text-lg">
-                  ⚪
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm md:text-base font-black text-slate-900 uppercase">Belum Ada Status</span>
-                    <span className="text-sm md:text-base font-black text-slate-600">
-                      {loading ? '...' : `${getCardValue(data?.kelulusan.belum)} (${data?.kelulusan.belumPct}%)`}
-                    </span>
+                {/* Purwa */}
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-650 font-extrabold text-lg">
+                    🏅
                   </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-slate-300 h-full rounded-full transition-all duration-500" style={{ width: `${data?.kelulusan.belumPct}%` }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm md:text-base font-black text-slate-900 uppercase">Kader Purwa</span>
+                      <span className="text-sm md:text-base font-black text-teal-700">
+                        {loading ? '...' : `${getCardValue(data?.kelulusan.purwa)} (${data?.kelulusan.purwaPct}%)`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-gradient-to-r from-teal-400 to-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${data?.kelulusan.purwaPct}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Belum Ada Status */}
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 font-extrabold text-lg">
+                    ⚪
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm md:text-base font-black text-slate-900 uppercase">Belum Ada Status</span>
+                      <span className="text-sm md:text-base font-black text-slate-600">
+                        {loading ? '...' : `${getCardValue(data?.kelulusan.belum)} (${data?.kelulusan.belumPct}%)`}
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-slate-300 h-full rounded-full transition-all duration-500" style={{ width: `${data?.kelulusan.belumPct}%` }} />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-6 border-t border-slate-100 pt-4 text-center">
-            <span className="text-xs md:text-sm font-black text-slate-500 uppercase tracking-wider block">
-              Sertifikasi Kemenkes RI
-            </span>
-          </div>
-        </article>
-      </section>
+            <div className="mt-5 border-t border-slate-100 pt-3 text-center">
+              <span className="text-xs font-black text-slate-500 uppercase tracking-wider block">
+                Sertifikasi Kemenkes RI
+              </span>
+            </div>
+          </article>
 
-      {/* ── SEKTOR DISTRIBUSI MASA BAKTI KADER ── */}
-      <section
-        className="w-full bg-white p-6 border border-[#cdcdcd] shadow-[0_10px_30px_rgba(15,118,110,0.04)]"
-        style={{
-          borderTopLeftRadius: '17px',
-          borderTopRightRadius: '17px',
-          borderBottomRightRadius: '22px',
-          borderBottomLeftRadius: '17px',
-        }}
-      >
-        <div className="border-b border-slate-100 pb-3 mb-4">
-          <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-wider">
-            Masa Bakti Kader
-          </h3>
-          <p className="text-sm md:text-base font-medium text-slate-500 mt-1 leading-relaxed">
-            Persentase dan jumlah sebaran lamanya masa pengabdian kader aktif di wilayah terpilih.
-          </p>
-        </div>
+          {/* Card 4: Masa Bakti Kader */}
+          <article
+            className="border border-[#cdcdcd] bg-white p-5 shadow-[0_10px_30px_rgba(15,118,110,0.04)] flex flex-col justify-between rounded-2xl flex-1"
+          >
+            <div>
+              <div className="border-b border-slate-100 pb-3 mb-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base md:text-lg font-black text-slate-900 uppercase tracking-wider">
+                    Masa Bakti Kader
+                  </h3>
+                  <span className="rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs md:text-sm font-black text-indigo-800 uppercase">
+                    Tenure
+                  </span>
+                </div>
+                <p className="text-xs md:text-sm font-medium text-slate-500 mt-1 leading-relaxed">
+                  Persentase sebaran lamanya masa pengabdian kader aktif di wilayah.
+                </p>
+              </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {/* kurangDari5 */}
-          <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 text-center transition-all hover:bg-slate-100/50">
-            <p className="text-xs md:text-sm font-black text-slate-500 uppercase tracking-wider">
-              &lt; 5 Tahun
-            </p>
-            <span className="text-3xl md:text-4xl font-black text-slate-950 block mt-1 leading-tight">
-              {loading ? '...' : getCardValue(data?.masaBakti.kurangDari5)}
-            </span>
-            <span className="inline-block mt-2 text-xs md:text-sm font-black text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
-              {loading ? '...' : `${data?.masaBakti.kurangDari5Pct}%`}
-            </span>
-          </div>
+              <div className="relative flex justify-center items-center my-1.5 h-[115px]">
+                {loading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-5 w-5 animate-spin text-[#534AB7]" />
+                  </div>
+                ) : (
+                  <>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: '< 5 Tahun', value: data?.masaBakti.kurangDari5 || 0 },
+                            { name: '5 - 10 Tahun', value: data?.masaBakti.antara5Dan10 || 0 },
+                            { name: '10 - 15 Tahun', value: data?.masaBakti.antara10Dan15 || 0 },
+                            { name: '15 - 20 Tahun', value: data?.masaBakti.antara15Dan20 || 0 },
+                            { name: '> 20 Tahun', value: data?.masaBakti.lebihDari20 || 0 }
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={32}
+                          outerRadius={45}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          <Cell fill="#818cf8" />
+                          <Cell fill="#6366f1" />
+                          <Cell fill="#4f46e5" />
+                          <Cell fill="#3730a3" />
+                          <Cell fill="#1e1b4b" />
+                        </Pie>
+                        <Tooltip
+                          formatter={(value) => [Number(value).toLocaleString('id-ID'), 'Jumlah']}
+                          contentStyle={{
+                            background: 'rgba(255,255,255,0.96)',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: 'bold'
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Center Text inside Doughnut */}
+                    <div className="absolute flex flex-col items-center justify-center text-center">
+                      <span className="text-base font-black text-slate-900 leading-none">
+                        {getCardValue(data?.totalKader)}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-0.5 block">
+                        Total Kader
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
 
-          {/* antara5Dan10 */}
-          <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 text-center transition-all hover:bg-slate-100/50">
-            <p className="text-xs md:text-sm font-black text-slate-500 uppercase tracking-wider">
-              5 - 10 Tahun
-            </p>
-            <span className="text-3xl md:text-4xl font-black text-slate-950 block mt-1 leading-tight">
-              {loading ? '...' : getCardValue(data?.masaBakti.antara5Dan10)}
-            </span>
-            <span className="inline-block mt-2 text-xs md:text-sm font-black text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
-              {loading ? '...' : `${data?.masaBakti.antara5Dan10Pct}%`}
-            </span>
-          </div>
+              {/* Compact Legend Grid */}
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 mt-2 text-[9px] font-bold text-slate-700">
+                {[
+                  { label: '< 5 Thn', pct: data?.masaBakti.kurangDari5Pct, color: '#818cf8' },
+                  { label: '5-10 Thn', pct: data?.masaBakti.antara5Dan10Pct, color: '#6366f1' },
+                  { label: '10-15 Thn', pct: data?.masaBakti.antara10Dan15Pct, color: '#4f46e5' },
+                  { label: '15-20 Thn', pct: data?.masaBakti.antara15Dan20Pct, color: '#3730a3' },
+                  { label: '> 20 Thn', pct: data?.masaBakti.lebihDari20Pct, color: '#1e1b4b' },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="truncate">{item.label}:</span>
+                    <span className="text-slate-955 font-black">{loading ? '...' : `${item.pct}%`}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          {/* antara10Dan15 */}
-          <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 text-center transition-all hover:bg-slate-100/50">
-            <p className="text-xs md:text-sm font-black text-slate-500 uppercase tracking-wider">
-              10 - 15 Tahun
-            </p>
-            <span className="text-3xl md:text-4xl font-black text-slate-950 block mt-1 leading-tight">
-              {loading ? '...' : getCardValue(data?.masaBakti.antara10Dan15)}
-            </span>
-            <span className="inline-block mt-2 text-xs md:text-sm font-black text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
-              {loading ? '...' : `${data?.masaBakti.antara10Dan15Pct}%`}
-            </span>
-          </div>
-
-          {/* antara15Dan20 */}
-          <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 text-center transition-all hover:bg-slate-100/50">
-            <p className="text-xs md:text-sm font-black text-slate-500 uppercase tracking-wider">
-              15 - 20 Tahun
-            </p>
-            <span className="text-3xl md:text-4xl font-black text-slate-950 block mt-1 leading-tight">
-              {loading ? '...' : getCardValue(data?.masaBakti.antara15Dan20)}
-            </span>
-            <span className="inline-block mt-2 text-xs md:text-sm font-black text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
-              {loading ? '...' : `${data?.masaBakti.antara15Dan20Pct}%`}
-            </span>
-          </div>
-
-          {/* lebihDari20 */}
-          <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 text-center col-span-2 md:col-span-1 transition-all hover:bg-slate-100/50">
-            <p className="text-xs md:text-sm font-black text-slate-500 uppercase tracking-wider">
-              &gt; 20 Tahun
-            </p>
-            <span className="text-3xl md:text-4xl font-black text-slate-950 block mt-1 leading-tight">
-              {loading ? '...' : getCardValue(data?.masaBakti.lebihDari20)}
-            </span>
-            <span className="inline-block mt-2 text-xs md:text-sm font-black text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full">
-              {loading ? '...' : `${data?.masaBakti.lebihDari20Pct}%`}
-            </span>
-          </div>
+            <div className="mt-4 border-t border-slate-100 pt-3 text-center">
+              <span className="text-xs md:text-sm font-black text-slate-500 uppercase tracking-wider block">
+                Pengabdian Kader Posyandu
+              </span>
+            </div>
+          </article>
         </div>
       </section>
 
