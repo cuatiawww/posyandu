@@ -1374,7 +1374,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
       >
         <div className="border-b border-slate-100 pb-3 mb-4">
           <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-wider">
-            Masa Bakti Kader (Tenure)
+            Masa Bakti Kader
           </h3>
           <p className="text-sm md:text-base font-medium text-slate-500 mt-1 leading-relaxed">
             Persentase dan jumlah sebaran lamanya masa pengabdian kader aktif di wilayah terpilih.
