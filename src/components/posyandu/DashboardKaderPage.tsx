@@ -26,6 +26,8 @@ import {
   CheckCircle2,
   ArrowUpDown,
   Download,
+  BarChart3,
+  Table as TableIcon,
 } from 'lucide-react'
 import {
   PieChart,
@@ -61,6 +63,60 @@ const DisasterMap = dynamic(() => import('./DisasterMap'), {
   ),
 })
 
+const CustomKaderTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload
+    return (
+      <div className="bg-white/95 border border-slate-200 rounded-2xl shadow-xl p-4 max-w-[320px] backdrop-blur-sm text-xs font-bold text-slate-800">
+        <p className="text-sm font-black text-slate-900 border-b border-slate-100 pb-2 mb-3 uppercase tracking-wide">
+          {data.nama}
+        </p>
+
+        {/* Posyandu Breakdown */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-indigo-900 mb-1 border-b border-indigo-100/50 pb-0.5">
+            <span className="font-extrabold uppercase">Kader Posyandu</span>
+            <span className="font-black text-sm">
+              {data.kaderPosyandu.total.toLocaleString('id-ID')}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-slate-600 font-bold pl-1">
+            <span>Purwa:</span>
+            <span className="text-right text-slate-900">{data.kaderPosyandu.purwa.toLocaleString('id-ID')} ({data.kaderPosyandu.purwaPct}%)</span>
+            <span>Madya:</span>
+            <span className="text-right text-slate-900">{data.kaderPosyandu.madya.toLocaleString('id-ID')} ({data.kaderPosyandu.madyaPct}%)</span>
+            <span>Utama:</span>
+            <span className="text-right text-slate-900">{data.kaderPosyandu.utama.toLocaleString('id-ID')} ({data.kaderPosyandu.utamaPct}%)</span>
+            <span>Belum Berstatus:</span>
+            <span className="text-right text-slate-500">{data.kaderPosyandu.belum.toLocaleString('id-ID')} ({data.kaderPosyandu.belumPct}%)</span>
+          </div>
+        </div>
+
+        {/* Pustu Breakdown */}
+        <div>
+          <div className="flex items-center justify-between text-teal-950 mb-1 border-b border-teal-100/50 pb-0.5">
+            <span className="font-extrabold uppercase">Kader Pustu</span>
+            <span className="font-black text-sm">
+              {data.kaderPustu.total.toLocaleString('id-ID')}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-slate-600 font-bold pl-1">
+            <span>Purwa:</span>
+            <span className="text-right text-slate-900">{data.kaderPustu.purwa.toLocaleString('id-ID')} ({data.kaderPustu.purwaPct}%)</span>
+            <span>Madya:</span>
+            <span className="text-right text-slate-900">{data.kaderPustu.madya.toLocaleString('id-ID')} ({data.kaderPustu.madyaPct}%)</span>
+            <span>Utama:</span>
+            <span className="text-right text-slate-900">{data.kaderPustu.utama.toLocaleString('id-ID')} ({data.kaderPustu.utamaPct}%)</span>
+            <span>Belum Berstatus:</span>
+            <span className="text-right text-slate-500">{data.kaderPustu.belum.toLocaleString('id-ID')} ({data.kaderPustu.belumPct}%)</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  return null
+}
+
 export default function DashboardKaderPage() {
   const { token, isInitialized, user } = useAuthStore()
 
@@ -81,16 +137,47 @@ export default function DashboardKaderPage() {
   const [selectedTimeframe, setSelectedTimeframe] = useState('Tahunan')
   const [selectedPeriod, setSelectedPeriod] = useState('')
 
-    // Smart search bar states
+  // Smart search bar states
   const [searchQuery, setSearchQuery] = useState('')
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-    // Table search & sort states
+  // Table search & sort states
   const [tableSearchQuery, setTableSearchQuery] = useState('')
   const [sortKey, setSortKey] = useState<string>('posyandu_total')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table')
+  const [visibleSeries, setVisibleSeries] = useState<Record<string, boolean>>({
+    'kaderPosyandu.utama': true,
+    'kaderPosyandu.madya': true,
+    'kaderPosyandu.purwa': true,
+    'kaderPosyandu.belum': true,
+    'kaderPustu.utama': true,
+    'kaderPustu.madya': true,
+    'kaderPustu.purwa': true,
+    'kaderPustu.belum': true,
+  })
+
+  const handleLegendClick = (entry: any) => {
+    const dataKey = entry.dataKey
+    if (dataKey) {
+      setVisibleSeries((prev) => ({
+        ...prev,
+        [dataKey]: !prev[dataKey],
+      }))
+    }
+  }
+
+  const formatLegendText = (value: any, entry: any) => {
+    const dataKey = entry.dataKey
+    const isVisible = visibleSeries[dataKey] ?? true
+    return (
+      <span className={`select-none cursor-pointer transition-all ${isVisible ? 'text-[#0f172a] font-bold' : 'text-slate-400 font-normal line-through'}`}>
+        {value}
+      </span>
+    )
+  }
 
   // sync locked user scope
   const isProvLocked = user?.wilayah_scope?.mode === 'provinsi'
@@ -253,7 +340,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
       analysisText += `\n- Kader Terlatih (25 Kompetensi Dasar): ${kaderTerlatih.toLocaleString('id-ID')} (${pctTerlatih}%).`
       analysisText += `\n- Rerata Pemenuhan Indeks Kompetensi: ${data.avgKompetensiPct}%.`
       analysisText += `\n- Total Kunjungan Rumah Terlaksana: ${totalVisits.toLocaleString('id-ID')} kunjungan.`
-      
+
       let recommendations = `\n\nREKOMENDASI PENGEMBANGAN KADER:`
       if (pctTerlatih < 75) {
         recommendations += `\n1. Tingkatkan program pelatihan sertifikasi 25 kompetensi dasar kader melalui modul digital dan workshop Puskesmas.`
@@ -275,12 +362,12 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
     }
   }, [data])
 
-    const getCardValue = (val: number | null | undefined) => {
+  const getCardValue = (val: number | null | undefined) => {
     if (val === null || val === undefined) return '0'
     return val.toLocaleString('id-ID')
   }
 
-    // Filter and sort matrix table data
+  // Filter and sort matrix table data
   const processedTableData = useMemo(() => {
     if (!data?.wilayahBreakdown) return []
     let result = [...data.wilayahBreakdown]
@@ -296,7 +383,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
         if (key === 'jumlahPosyandu') return item.jumlahPosyandu
         if (key === 'totalKader') return item.totalKader
         if (key === 'kunjunganRumah') return item.kunjunganRumah
-        
+
         // Posyandu keys
         if (key === 'posyandu_total') return item.kaderPosyandu.total
         if (key === 'posyandu_purwa') return item.kaderPosyandu.purwa
@@ -307,7 +394,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
         if (key === 'posyandu_utamaPct') return item.kaderPosyandu.utamaPct
         if (key === 'posyandu_belum') return item.kaderPosyandu.belum
         if (key === 'posyandu_belumPct') return item.kaderPosyandu.belumPct
-        
+
         // Pustu keys
         if (key === 'pustu_total') return item.kaderPustu.total
         if (key === 'pustu_purwa') return item.kaderPustu.purwa
@@ -318,7 +405,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
         if (key === 'pustu_utamaPct') return item.kaderPustu.utamaPct
         if (key === 'pustu_belum') return item.kaderPustu.belum
         if (key === 'pustu_belumPct') return item.kaderPustu.belumPct
-        
+
         return 0
       }
 
@@ -418,7 +505,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.setAttribute('href', url)
-    
+
     const scopeName = isFiltered ? `kabupaten_${province.toLowerCase()}` : 'nasional'
     link.setAttribute(
       'download',
@@ -547,11 +634,10 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
           <button
             onClick={handleResetFilter}
             disabled={!showResetButton}
-            className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm md:text-base font-black shadow-sm transition-all outline-none h-12 uppercase tracking-wider ${
-              showResetButton
-                ? 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 hover:-translate-y-0.5 active:scale-95'
-                : 'border-slate-200 bg-slate-50/50 text-slate-455 cursor-not-allowed'
-            }`}
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm md:text-base font-black shadow-sm transition-all outline-none h-12 uppercase tracking-wider ${showResetButton
+              ? 'border-indigo-200 bg-indigo-50 text-indigo-800 hover:bg-indigo-100 hover:-translate-y-0.5 active:scale-95'
+              : 'border-slate-200 bg-slate-50/50 text-slate-455 cursor-not-allowed'
+              }`}
           >
             <RefreshCw className="h-4 w-4 shrink-0" />
             <span>RESET FILTER</span>
@@ -761,9 +847,8 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
                   {loading ? '...' : `${data?.avgKompetensiPct}%`}
                 </span>
                 {!loading && (
-                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                    (data?.avgKompetensiPct || 0) >= 80 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                  }`}>
+                  <span className={`text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${(data?.avgKompetensiPct || 0) >= 80 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                    }`}>
                     {(data?.avgKompetensiPct || 0) >= 80 ? 'Lolos' : 'Gagal'}
                   </span>
                 )}
@@ -954,8 +1039,8 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
                 <AreaChart data={data?.kunjunganTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorKunj" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#534AB7" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#534AB7" stopOpacity={0.0}/>
+                      <stop offset="5%" stopColor="#534AB7" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#534AB7" stopOpacity={0.0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -1029,7 +1114,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
         </article>
       </section>
 
-            {/* ── SEKTOR PROGRESS SERTIFIKASI & MASA BAKTI KADER ── */}
+      {/* ── SEKTOR PROGRESS SERTIFIKASI & MASA BAKTI KADER ── */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full bg-[#fbffff] pt-2">
         {/* Card 1: Pelatihan / Orientasi */}
         <article
@@ -1055,7 +1140,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
                 Persentase pencapaian orientasi 25 kompetensi dasar di setiap klaster kelompok layanan.
               </p>
             </div>
-            
+
             <div className="text-center my-4">
               <span className="text-4xl md:text-5xl font-black text-slate-950 block tracking-tight leading-none mb-1.5">
                 {loading ? '...' : getCardValue(data?.pelatihan.dilatih)}
@@ -1378,7 +1463,7 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
           <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-4 mb-4 gap-4">
             <div>
               <h3 className="text-lg sm:text-[22px] font-black text-slate-900 uppercase tracking-wide leading-tight">
-                MATRIKS DATA KADER PERPROVINSI/NASIONAL - {getRegionLabel()}
+                MATRIKS DATA KADER - {getRegionLabel()}
               </h3>
               <p className="text-sm sm:text-[15px] font-medium text-slate-500 mt-1.5 leading-relaxed">
                 Tabel rekapitulasi kualifikasi kelulusan kader (Purwa, Madya, Utama) untuk Kader Posyandu dan Kader Pustu per wilayah.
@@ -1399,6 +1484,25 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
 
+              {/* Toggle Chart/Table Button */}
+              <button
+                onClick={() => setViewMode(viewMode === 'table' ? 'chart' : 'table')}
+                className="flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 px-5 h-11 text-sm font-bold shadow-sm transition active:scale-[0.98] cursor-pointer"
+                title={viewMode === 'table' ? 'Lihat Visualisasi Chart' : 'Lihat Matriks Tabel'}
+              >
+                {viewMode === 'table' ? (
+                  <>
+                    <BarChart3 className="h-4 w-4 text-[#534AB7]" />
+                    <span>Visualisasi Chart</span>
+                  </>
+                ) : (
+                  <>
+                    <TableIcon className="h-4 w-4 text-[#534AB7]" />
+                    <span>Matriks Tabel</span>
+                  </>
+                )}
+              </button>
+
               {/* Export CSV Button */}
               <button
                 onClick={handleExportKaderCSV}
@@ -1410,168 +1514,302 @@ Tidak ada data kader Posyandu untuk wilayah ini.`)
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse min-w-[1500px]">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-800 font-black uppercase tracking-wider text-center text-sm sm:text-base">
-                  <th className="py-3.5 px-2 w-16 text-center" rowSpan={2}>#</th>
-                  <th className="py-3.5 px-4 text-left cursor-pointer select-none" rowSpan={2} onClick={() => handleSort('nama')}>
-                    <span className="align-middle">{province ? 'Kabupaten/Kota' : 'Provinsi'}</span>
-                    {renderSortIndicator('nama')}
-                  </th>
-                  <th className="py-3 px-2 border-l border-slate-200 text-indigo-900 bg-indigo-50/70 font-black text-sm sm:text-base" colSpan={9}>
-                    Kader Posyandu
-                  </th>
-                  <th className="py-3 px-2 border-l border-slate-200 text-teal-900 bg-teal-50/70 font-black text-sm sm:text-base" colSpan={9}>
-                    Kader Pustu
-                  </th>
-                </tr>
-                <tr className="border-b border-slate-200 text-slate-700 font-extrabold uppercase tracking-wider text-xs sm:text-sm text-center">
-                  {/* Posyandu sub-headers */}
-                  <th className="py-2.5 px-1 border-l border-slate-100 cursor-pointer select-none text-indigo-900 bg-indigo-50/30" onClick={() => handleSort('posyandu_total')}>
-                    <span className="block">Total</span><span className="block">Kader</span>{renderSortIndicator('posyandu_total')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_purwa')}>
-                    <span className="block">Jumlah</span><span className="block">Kader Purwa</span>{renderSortIndicator('posyandu_purwa')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_purwaPct')}>
-                    <span className="block">Persentase</span><span className="block">Kader Purwa</span>{renderSortIndicator('posyandu_purwaPct')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_madya')}>
-                    <span className="block">Jumlah</span><span className="block">Kader Madya</span>{renderSortIndicator('posyandu_madya')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_madyaPct')}>
-                    <span className="block">Persentase</span><span className="block">Kader Madya</span>{renderSortIndicator('posyandu_madyaPct')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_utama')}>
-                    <span className="block">Jumlah</span><span className="block">Kader Utama</span>{renderSortIndicator('posyandu_utama')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_utamaPct')}>
-                    <span className="block">Persentase</span><span className="block">Kader Utama</span>{renderSortIndicator('posyandu_utamaPct')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30 font-extrabold" onClick={() => handleSort('posyandu_belum')}>
-                    <span className="block">Kader Belum</span><span className="block">Ada Status</span>{renderSortIndicator('posyandu_belum')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30 font-extrabold" onClick={() => handleSort('posyandu_belumPct')}>
-                    <span className="block">Persentase Kader</span><span className="block">Belum Ada Status</span>{renderSortIndicator('posyandu_belumPct')}
-                  </th>
-
-                  {/* Pustu sub-headers */}
-                  <th className="py-2.5 px-1 border-l border-slate-200 cursor-pointer select-none text-teal-900 bg-teal-50/30" onClick={() => handleSort('pustu_total')}>
-                    <span className="block">Total</span><span className="block">Kader</span>{renderSortIndicator('pustu_total')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_purwa')}>
-                    <span className="block">Jumlah</span><span className="block">Kader Purwa</span>{renderSortIndicator('pustu_purwa')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_purwaPct')}>
-                    <span className="block">Persentase</span><span className="block">Kader Purwa</span>{renderSortIndicator('pustu_purwaPct')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_madya')}>
-                    <span className="block">Jumlah</span><span className="block">Kader Madya</span>{renderSortIndicator('pustu_madya')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_madyaPct')}>
-                    <span className="block">Persentase</span><span className="block">Kader Madya</span>{renderSortIndicator('pustu_madyaPct')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_utama')}>
-                    <span className="block">Jumlah</span><span className="block">Kader Utama</span>{renderSortIndicator('pustu_utama')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_utamaPct')}>
-                    <span className="block">Persentase</span><span className="block">Kader Utama</span>{renderSortIndicator('pustu_utamaPct')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30 font-extrabold" onClick={() => handleSort('pustu_belum')}>
-                    <span className="block">Kader Belum</span><span className="block">Ada Status</span>{renderSortIndicator('pustu_belum')}
-                  </th>
-                  <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30 font-extrabold" onClick={() => handleSort('pustu_belumPct')}>
-                    <span className="block">Persentase Kader</span><span className="block">Belum Ada Status</span>{renderSortIndicator('pustu_belumPct')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-bold text-slate-800 text-center text-sm sm:text-base">
-                {loading ? (
-                  <tr>
-                    <td colSpan={20} className="py-8 text-center text-slate-500 italic">
-                      Memuat data matriks kader...
-                    </td>
+          {viewMode === 'table' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse min-w-[1500px]">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-800 font-black uppercase tracking-wider text-center text-sm sm:text-base">
+                    <th className="py-3.5 px-2 w-16 text-center" rowSpan={2}>#</th>
+                    <th className="py-3.5 px-4 text-left cursor-pointer select-none" rowSpan={2} onClick={() => handleSort('nama')}>
+                      <span className="align-middle">{province ? 'Kabupaten/Kota' : 'Provinsi'}</span>
+                      {renderSortIndicator('nama')}
+                    </th>
+                    <th className="py-3 px-2 border-l border-slate-200 text-indigo-900 bg-indigo-50/70 font-black text-sm sm:text-base" colSpan={9}>
+                      Kader Posyandu
+                    </th>
+                    <th className="py-3 px-2 border-l border-slate-200 text-teal-900 bg-teal-50/70 font-black text-sm sm:text-base" colSpan={9}>
+                      Kader Pustu
+                    </th>
                   </tr>
-                ) : !processedTableData || processedTableData.length === 0 ? (
-                  <tr>
-                    <td colSpan={20} className="py-8 text-center text-slate-500 italic">
-                      Tidak ada data wilayah untuk filter terpilih.
-                    </td>
-                  </tr>
-                ) : (
-                  processedTableData.map((wil, idx) => {
-                    return (
-                      <tr key={idx} className="hover:bg-slate-100/70 transition-colors odd:bg-slate-50">
-                        <td className="py-4 px-2 text-center text-slate-500 font-bold">{idx + 1}</td>
-                        <td className="py-4 px-4 font-black text-slate-900 uppercase text-left truncate max-w-[200px]">
-                          {wil.nama}
-                        </td>
-                        
-                        {/* Posyandu metrics */}
-                        <td className="py-4 px-1 border-l border-slate-100 text-center font-black text-slate-950 bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.total.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-700 bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.purwa.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-indigo-700 font-black bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.purwaPct}%
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-700 bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.madya.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-indigo-700 font-black bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.madyaPct}%
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-700 bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.utama.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-indigo-700 font-black bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.utamaPct}%
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-600 bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.belum.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-600 font-black bg-indigo-50/[0.03]">
-                          {wil.kaderPosyandu.belumPct}%
-                        </td>
+                  <tr className="border-b border-slate-200 text-slate-700 font-extrabold uppercase tracking-wider text-xs sm:text-sm text-center">
+                    {/* Posyandu sub-headers */}
+                    <th className="py-2.5 px-1 border-l border-slate-100 cursor-pointer select-none text-indigo-900 bg-indigo-50/30" onClick={() => handleSort('posyandu_total')}>
+                      <span className="block">Total</span><span className="block">Kader</span>{renderSortIndicator('posyandu_total')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_purwa')}>
+                      <span className="block">Jumlah</span><span className="block">Kader Purwa</span>{renderSortIndicator('posyandu_purwa')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_purwaPct')}>
+                      <span className="block">Persentase</span><span className="block">Kader Purwa</span>{renderSortIndicator('posyandu_purwaPct')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_madya')}>
+                      <span className="block">Jumlah</span><span className="block">Kader Madya</span>{renderSortIndicator('posyandu_madya')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_madyaPct')}>
+                      <span className="block">Persentase</span><span className="block">Kader Madya</span>{renderSortIndicator('posyandu_madyaPct')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_utama')}>
+                      <span className="block">Jumlah</span><span className="block">Kader Utama</span>{renderSortIndicator('posyandu_utama')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30" onClick={() => handleSort('posyandu_utamaPct')}>
+                      <span className="block">Persentase</span><span className="block">Kader Utama</span>{renderSortIndicator('posyandu_utamaPct')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30 font-extrabold" onClick={() => handleSort('posyandu_belum')}>
+                      <span className="block">Kader Belum</span><span className="block">Ada Status</span>{renderSortIndicator('posyandu_belum')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-indigo-50/30 font-extrabold" onClick={() => handleSort('posyandu_belumPct')}>
+                      <span className="block">Persentase Kader</span><span className="block">Belum Ada Status</span>{renderSortIndicator('posyandu_belumPct')}
+                    </th>
 
-                        {/* Pustu metrics */}
-                        <td className="py-4 px-1 border-l border-slate-200 text-center font-black text-slate-950 bg-teal-50/[0.03]">
-                          {wil.kaderPustu.total.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-700 bg-teal-50/[0.03]">
-                          {wil.kaderPustu.purwa.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-teal-700 font-black bg-teal-50/[0.03]">
-                          {wil.kaderPustu.purwaPct}%
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-700 bg-teal-50/[0.03]">
-                          {wil.kaderPustu.madya.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-teal-700 font-black bg-teal-50/[0.03]">
-                          {wil.kaderPustu.madyaPct}%
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-700 bg-teal-50/[0.03]">
-                          {wil.kaderPustu.utama.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-teal-700 font-black bg-teal-50/[0.03]">
-                          {wil.kaderPustu.utamaPct}%
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-600 bg-teal-50/[0.03]">
-                          {wil.kaderPustu.belum.toLocaleString('id-ID')}
-                        </td>
-                        <td className="py-4 px-1 text-center text-slate-600 font-black bg-teal-50/[0.03]">
-                          {wil.kaderPustu.belumPct}%
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                    {/* Pustu sub-headers */}
+                    <th className="py-2.5 px-1 border-l border-slate-200 cursor-pointer select-none text-teal-900 bg-teal-50/30" onClick={() => handleSort('pustu_total')}>
+                      <span className="block">Total</span><span className="block">Kader</span>{renderSortIndicator('pustu_total')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_purwa')}>
+                      <span className="block">Jumlah</span><span className="block">Kader Purwa</span>{renderSortIndicator('pustu_purwa')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_purwaPct')}>
+                      <span className="block">Persentase</span><span className="block">Kader Purwa</span>{renderSortIndicator('pustu_purwaPct')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_madya')}>
+                      <span className="block">Jumlah</span><span className="block">Kader Madya</span>{renderSortIndicator('pustu_madya')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_madyaPct')}>
+                      <span className="block">Persentase</span><span className="block">Kader Madya</span>{renderSortIndicator('pustu_madyaPct')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_utama')}>
+                      <span className="block">Jumlah</span><span className="block">Kader Utama</span>{renderSortIndicator('pustu_utama')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30" onClick={() => handleSort('pustu_utamaPct')}>
+                      <span className="block">Persentase</span><span className="block">Kader Utama</span>{renderSortIndicator('pustu_utamaPct')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30 font-extrabold" onClick={() => handleSort('pustu_belum')}>
+                      <span className="block">Kader Belum</span><span className="block">Ada Status</span>{renderSortIndicator('pustu_belum')}
+                    </th>
+                    <th className="py-2.5 px-1 cursor-pointer select-none bg-teal-50/30 font-extrabold" onClick={() => handleSort('pustu_belumPct')}>
+                      <span className="block">Persentase Kader</span><span className="block">Belum Ada Status</span>{renderSortIndicator('pustu_belumPct')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-bold text-slate-800 text-center text-sm sm:text-base">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={20} className="py-8 text-center text-slate-500 italic">
+                        Memuat data matriks kader...
+                      </td>
+                    </tr>
+                  ) : !processedTableData || processedTableData.length === 0 ? (
+                    <tr>
+                      <td colSpan={20} className="py-8 text-center text-slate-500 italic">
+                        Tidak ada data wilayah untuk filter terpilih.
+                      </td>
+                    </tr>
+                  ) : (
+                    processedTableData.map((wil, idx) => {
+                      return (
+                        <tr key={idx} className="hover:bg-slate-100/70 transition-colors odd:bg-slate-50">
+                          <td className="py-4 px-2 text-center text-slate-500 font-bold">{idx + 1}</td>
+                          <td className="py-4 px-4 font-black text-slate-900 uppercase text-left truncate max-w-[200px]">
+                            {wil.nama}
+                          </td>
+
+                          {/* Posyandu metrics */}
+                          <td className="py-4 px-1 border-l border-slate-100 text-center font-black text-slate-950 bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.total.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-700 bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.purwa.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-indigo-700 font-black bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.purwaPct}%
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-700 bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.madya.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-indigo-700 font-black bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.madyaPct}%
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-700 bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.utama.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-indigo-700 font-black bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.utamaPct}%
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-600 bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.belum.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-600 font-black bg-indigo-50/[0.03]">
+                            {wil.kaderPosyandu.belumPct}%
+                          </td>
+
+                          {/* Pustu metrics */}
+                          <td className="py-4 px-1 border-l border-slate-200 text-center font-black text-slate-950 bg-teal-50/[0.03]">
+                            {wil.kaderPustu.total.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-700 bg-teal-50/[0.03]">
+                            {wil.kaderPustu.purwa.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-teal-700 font-black bg-teal-50/[0.03]">
+                            {wil.kaderPustu.purwaPct}%
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-700 bg-teal-50/[0.03]">
+                            {wil.kaderPustu.madya.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-teal-700 font-black bg-teal-50/[0.03]">
+                            {wil.kaderPustu.madyaPct}%
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-700 bg-teal-50/[0.03]">
+                            {wil.kaderPustu.utama.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-teal-700 font-black bg-teal-50/[0.03]">
+                            {wil.kaderPustu.utamaPct}%
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-600 bg-teal-50/[0.03]">
+                            {wil.kaderPustu.belum.toLocaleString('id-ID')}
+                          </td>
+                          <td className="py-4 px-1 text-center text-slate-600 font-black bg-teal-50/[0.03]">
+                            {wil.kaderPustu.belumPct}%
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="w-full py-4">
+              {loading ? (
+                <div className="h-[400px] flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-[#534AB7]" />
+                </div>
+              ) : !processedTableData || processedTableData.length === 0 ? (
+                <div className="h-[400px] flex items-center justify-center text-slate-500 italic">
+                  Tidak ada data wilayah untuk filter terpilih.
+                </div>
+              ) : (
+                <div className="w-full bg-slate-50/50 rounded-2xl border border-slate-100 p-4 sm:p-6">
+                  <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h4 className="text-base font-black text-slate-900 uppercase">
+                        Komparasi & Kualifikasi Kader Posyandu vs Kader Pustu
+                      </h4>
+                      <p className="text-xs text-slate-500 mt-0.5 font-bold">
+                        Grafik batang tumpuk (stacked bar) yang menunjukkan sebaran jumlah kader berdasarkan klasifikasi (Utama, Madya, Purwa, Belum Berstatus).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-[480px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={processedTableData}
+                        margin={{ top: 20, right: 10, left: -10, bottom: 60 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          dataKey="nama"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fill: '#334155', fontSize: 11, fontWeight: 700 }}
+                          interval={0}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#64748b', fontSize: 12, fontWeight: 700 }}
+                        />
+                        <Tooltip content={<CustomKaderTooltip />} />
+                        <Legend
+                          verticalAlign="top"
+                          height={45}
+                          iconType="circle"
+                          onClick={handleLegendClick}
+                          formatter={formatLegendText}
+                          wrapperStyle={{
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            paddingBottom: '20px',
+                          }}
+                        />
+                        {/* Posyandu Stack */}
+                        <Bar
+                          name="Posyandu: Belum Ada Status"
+                          dataKey="kaderPosyandu.belum"
+                          stackId="posyandu"
+                          fill="#e0e7ff"
+                          hide={!visibleSeries['kaderPosyandu.belum']}
+                          maxBarSize={28}
+                        />
+                        <Bar
+                          name="Posyandu: Purwa"
+                          dataKey="kaderPosyandu.purwa"
+                          stackId="posyandu"
+                          fill="#818cf8"
+                          hide={!visibleSeries['kaderPosyandu.purwa']}
+                          maxBarSize={28}
+                        />
+                        <Bar
+                          name="Posyandu: Madya"
+                          dataKey="kaderPosyandu.madya"
+                          stackId="posyandu"
+                          fill="#534AB7"
+                          hide={!visibleSeries['kaderPosyandu.madya']}
+                          maxBarSize={28}
+                        />
+                        <Bar
+                          name="Posyandu: Utama"
+                          dataKey="kaderPosyandu.utama"
+                          stackId="posyandu"
+                          fill="#312e81"
+                          radius={[4, 4, 0, 0]}
+                          hide={!visibleSeries['kaderPosyandu.utama']}
+                          maxBarSize={28}
+                        />
+                        {/* Pustu Stack */}
+                        <Bar
+                          name="Pustu: Belum Ada Status"
+                          dataKey="kaderPustu.belum"
+                          stackId="pustu"
+                          fill="#ccfbf1"
+                          hide={!visibleSeries['kaderPustu.belum']}
+                          maxBarSize={28}
+                        />
+                        <Bar
+                          name="Pustu: Purwa"
+                          dataKey="kaderPustu.purwa"
+                          stackId="pustu"
+                          fill="#2dd4bf"
+                          hide={!visibleSeries['kaderPustu.purwa']}
+                          maxBarSize={28}
+                        />
+                        <Bar
+                          name="Pustu: Madya"
+                          dataKey="kaderPustu.madya"
+                          stackId="pustu"
+                          fill="#047D78"
+                          hide={!visibleSeries['kaderPustu.madya']}
+                          maxBarSize={28}
+                        />
+                        <Bar
+                          name="Pustu: Utama"
+                          dataKey="kaderPustu.utama"
+                          stackId="pustu"
+                          fill="#115e59"
+                          radius={[4, 4, 0, 0]}
+                          hide={!visibleSeries['kaderPustu.utama']}
+                          maxBarSize={28}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </article>
       </section>
 
