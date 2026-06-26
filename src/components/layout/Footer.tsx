@@ -51,7 +51,7 @@ export default function Footer() {
     <footer className="border-t border-teal-100 bg-white" role="contentinfo">
       <div className="h-1 bg-gradient-to-r from-[#0f8f96] via-[#25c2b8] to-transparent" />
       <div className="flex min-h-16 w-full flex-col items-center justify-between gap-3 px-4 py-3 sm:px-6 md:flex-row">
-        <p className="text-center text-xs text-slate-500 md:text-left">
+        <p className="text-center text-xs md:text-sm font-bold text-slate-500 md:text-left">
           © 2026 Kementerian Kesehatan Republik Indonesia. All rights reserved.
         </p>
 

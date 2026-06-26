@@ -4,15 +4,22 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, LayoutDashboard, Menu, X } from 'lucide-react'
+import { ChevronRight, LayoutDashboard, Menu, X, Users } from 'lucide-react'
 
 const menuItems = [
   {
-    label: 'NASIONAL',
-    shortLabel: 'Nasional',
+    label: 'DASHBOARD POSYANDU',
+    shortLabel: 'Posyandu',
     href: '/',
     icon: LayoutDashboard,
-    match: (pathname: string) => pathname === '/',
+    match: (pathname: string) => pathname === '/' || pathname.startsWith('/dashboard-posyandu'),
+  },
+  {
+    label: 'DASHBOARD KADER',
+    shortLabel: 'Kader',
+    href: '/dashboard-kader',
+    icon: Users,
+    match: (pathname: string) => pathname.startsWith('/dashboard-kader'),
   },
 ]
 

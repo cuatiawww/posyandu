@@ -1,3 +1,5 @@
+import { getPuskesmasStats } from './puskesmasData'
+
 export type YearlyTrendItem = {
   tahun: string
   valid: number
@@ -35,6 +37,19 @@ export type FunnelItem = {
   color: string
 }
 
+export type WilayahBreakdownItem = {
+  nama: string
+  valid: number
+  aktif: number
+  pctAktif: number
+  statusAktif: 'MEMENUHI' | 'TIDAK MEMENUHI'
+  siklusHidup: number
+  pctSiklusHidup: number
+  statusSiklusHidup: 'MEMENUHI' | 'TIDAK MEMENUHI'
+  kunjunganRumah: number
+  laporPustu: number
+}
+
 export type PosyanduDashboardData = {
   totalValid: number
   totalAktif: number
@@ -47,7 +62,9 @@ export type PosyanduDashboardData = {
   yearlyTrend: YearlyTrendItem[]
   provinsiBreakdown: ProvinsiItem[]
   kabupatenBreakdown: KabupatenItem[]
+  wilayahBreakdown: WilayahBreakdownItem[]
   funnelData: FunnelItem[]
+  markers: any[]
 }
 
 // 38 Provinces base values for year 2026
@@ -126,7 +143,6 @@ export function getPosyanduStats(
 ): PosyanduDashboardData {
   const yearFactor = getYearScalingFactor(selectedYear)
   const periodFactor = getPeriodScalingFactor(timeFrame, selectedPeriod)
-  const combinedFactor = yearFactor * periodFactor
 
   const targetPct = TARGET_BY_YEAR[selectedYear] || 25
 
@@ -293,6 +309,30 @@ export function getPosyanduStats(
 
   const statusTarget = pctKabKotaMemenuhi >= targetPct ? 'MEMENUHI' : 'TIDAK MEMENUHI'
 
+  // Compile unified breakdown
+  const breakdownSource = isNational ? provinces : kabupatenBreakdown
+  const wilayahBreakdown: WilayahBreakdownItem[] = breakdownSource.map(item => {
+    const pctAktif = item.valid > 0 ? Math.round((item.aktif / item.valid) * 10000) / 100 : 0
+    const statusAktif = pctAktif >= 80 ? 'MEMENUHI' : 'TIDAK MEMENUHI'
+    
+    // Check if pctSiklusHidupAktif is already computed in item
+    const pctSiklusHidup = item.valid > 0 ? Math.round((item.siklusHidup / item.valid) * 10000) / 100 : 0
+    const statusSiklusHidup = pctSiklusHidup >= 75 ? 'MEMENUHI' : 'TIDAK MEMENUHI'
+
+    return {
+      nama: item.nama,
+      valid: item.valid,
+      aktif: item.aktif,
+      pctAktif,
+      statusAktif,
+      siklusHidup: item.siklusHidup,
+      pctSiklusHidup,
+      statusSiklusHidup,
+      kunjunganRumah: item.kunjunganRumah,
+      laporPustu: item.laporPustu
+    }
+  })
+
   // 3. Yearly growth trend data (2021 - 2026)
   const yearlyTrend: YearlyTrendItem[] = [
     { tahun: '2021', valid: Math.round(totalValid * 0.82), aktif: Math.round(totalAktif * 0.74), siklusHidup: Math.round(totalSiklusHidupAktif * 0.45) },
@@ -312,6 +352,35 @@ export function getPosyanduStats(
     { stage: 'Melapor ke Pustu', value: totalLaporPustu, percentage: totalValid > 0 ? Math.round((totalLaporPustu / totalValid) * 100) : 0, color: '#f59e0b' },
   ]
 
+  // Get spatial markers from Puskesmas layer and convert them dynamically to Posyandu
+  const pkmStats = getPuskesmasStats(provinceName, kabupatenName)
+  const markers = pkmStats.markers.map(m => {
+    // Determine status_evaluasi based on Posyandu metrics:
+    // If it has good nakes rate, let's treat it as status_evaluasi = 'Baik'
+    let status_evaluasi: 'Baik' | 'Sedang' | 'Kurang' = 'Sedang'
+    if (m.nakes_pct >= 85) {
+      status_evaluasi = 'Baik'
+    } else if (m.nakes_pct < 60) {
+      status_evaluasi = 'Kurang'
+    }
+    
+    // Map percentages
+    const valid = 1
+    const aktif = m.nakes_pct >= 60 ? 1 : 0
+    const siklusHidup = (aktif && m.alkes_pct >= 60) ? 1 : 0
+    
+    return {
+      ...m,
+      jenis_bencana: m.jenis_bencana.replace('Puskesmas', 'Posyandu'),
+      status_evaluasi,
+      is_ranap: aktif === 1, // mapping 'is_ranap' to 'aktif' for map markers compatibility
+      karakteristik: m.karakteristik,
+      alkes_pct: m.alkes_pct, // Kunjungan Rumah rate mapping
+      obat_pct: m.obat_pct,   // Lapor Pustu rate mapping
+      nakes_pct: m.nakes_pct  // Aktif rate mapping
+    }
+  })
+
   return {
     totalValid,
     totalAktif,
@@ -324,6 +393,8 @@ export function getPosyanduStats(
     yearlyTrend,
     provinsiBreakdown,
     kabupatenBreakdown,
-    funnelData
+    wilayahBreakdown,
+    funnelData,
+    markers
   }
 }

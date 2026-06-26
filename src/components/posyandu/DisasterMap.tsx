@@ -935,10 +935,10 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
                 </p>
                 <div className="space-y-2">
                   {[
-                    { id: 'blud', label: 'Status BLUD', desc: 'Tata kelola administratif puskesmas' },
-                    { id: 'ilp', label: 'Kesiapan ILP', desc: 'Kelengkapan alat kesehatan (ILP)' },
-                    { id: 'pkp', label: 'Evaluasi PKP', desc: 'Ketersediaan dokter & tenaga medis' },
-                    { id: 'gabungan', label: 'Tata Kelola Baik (Gabungan)', desc: 'Gabungan evaluasi BLUD, ILP, dan PKP' },
+                    { id: 'blud', label: 'Posyandu Aktif', desc: 'Tingkat keaktifan operasional bulanan' },
+                    { id: 'ilp', label: 'Kunjungan Rumah', desc: 'Tingkat pelaksanaan kunjungan rumah oleh kader' },
+                    { id: 'pkp', label: 'Melapor ke Pustu', desc: 'Tingkat pelaporan berkala ke Pustu' },
+                    { id: 'gabungan', label: 'Capaian Gabungan', desc: 'Rata-rata evaluasi aktif, kunjungan, dan lapor' },
                   ].map((m) => (
                     <button
                       key={m.id}
@@ -1435,11 +1435,11 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
               {/* Stats badges */}
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="rounded-xl bg-teal-50/70 p-2 border border-teal-100/50">
-                  <p className="text-[9px] font-bold text-teal-700/80 uppercase">Total Puskesmas</p>
+                  <p className="text-[9px] font-bold text-teal-700/80 uppercase">Total Posyandu</p>
                   <p className="text-lg font-extrabold text-teal-700">{activePopup.stats.totalEvents}</p>
                 </div>
                 <div className="rounded-xl bg-teal-50/70 p-2 border border-teal-100/50">
-                  <p className="text-[9px] font-bold text-teal-700/80 uppercase">Rawat Inap</p>
+                  <p className="text-[9px] font-bold text-teal-700/80 uppercase">Aktif</p>
                   <p className="text-lg font-extrabold text-teal-700">{activePopup.stats.totalKorban}</p>
                 </div>
               </div>
@@ -1450,14 +1450,14 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
                   <>
                     <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Sebaran per Kab/Kota:</p>
                     {activePopup.stats.breakdown.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic">Tidak ada data Puskesmas.</p>
+                       <p className="text-xs text-slate-400 italic">Tidak ada data Posyandu.</p>
                     ) : (
                       <div className="space-y-1.5">
                         {activePopup.stats.breakdown.map((item: any, idx) => (
                           <div key={idx} className="flex justify-between items-center rounded-lg bg-slate-50/50 p-2 text-xs border border-slate-100">
                             <span className="font-semibold text-slate-700 truncate max-w-[150px]">{item.name}</span>
                             <span className="font-extrabold text-teal-800 bg-white border border-slate-200 px-1.5 py-0.5 rounded-md">
-                              {item.count} PKM ({item.ranapCount} Ranap)
+                              {item.count} Posyandu ({item.ranapCount} Aktif)
                             </span>
                           </div>
                         ))}
@@ -1466,25 +1466,25 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
                   </>
                 ) : (
                   <>
-                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Daftar Puskesmas:</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1">Daftar Posyandu:</p>
                     {!activePopup.stats.eventsList?.length ? (
-                      <p className="text-xs text-slate-400 italic">Tidak ada data Puskesmas.</p>
+                      <p className="text-xs text-slate-400 italic">Tidak ada data Posyandu.</p>
                     ) : (
                       <div className="space-y-2">
                         {activePopup.stats.eventsList.map((item, idx) => (
                           <div key={idx} className="rounded-xl border border-slate-100 bg-slate-50/30 p-2.5 text-xs">
                             <div className="flex justify-between items-start">
                               <span className="font-bold text-teal-800">{item.jenis_bencana}</span>
-                              <span className="text-[10px] text-slate-400 font-semibold">{item.is_ranap ? 'Rawat Inap' : 'Non Rawat Inap'}</span>
+                              <span className="text-[10px] text-slate-400 font-semibold">{item.is_ranap ? 'Aktif' : 'Tidak Aktif'}</span>
                             </div>
                             <div className="mt-1 text-[11px] text-slate-500">
                               {item.kecamatan && <span>Kec. {item.kecamatan}</span>}
                               {item.nama_desa && <span>, Desa {item.nama_desa}</span>}
                             </div>
                             <div className="mt-1.5 flex flex-wrap gap-2 justify-between border-t border-dashed border-slate-200/60 pt-1.5 text-[10px] text-slate-500">
-                              <span>Alkes: <b className="text-teal-700">{item.alkes_pct}%</b></span>
-                              <span>Obat: <b className="text-teal-700">{item.obat_pct}%</b></span>
-                              <span>Nakes: <b className="text-teal-700">{item.nakes_pct}%</b></span>
+                              <span>Kunjungan: <b className="text-teal-700">{item.alkes_pct}%</b></span>
+                              <span>Lapor Pustu: <b className="text-teal-700">{item.obat_pct}%</b></span>
+                              <span>Aktif: <b className="text-teal-700">{item.nakes_pct}%</b></span>
                             </div>
                           </div>
                         ))}
@@ -1525,13 +1525,13 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
           {showRegionLegend && (
             <div>
               <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-[#0f766e]">
-                {mapViewMode === 'blud' ? 'Capaian BLUD (Tata Kelola)' : mapViewMode === 'ilp' ? 'Kesiapan ILP (Alkes)' : mapViewMode === 'pkp' ? 'Evaluasi PKP (SDM)' : 'Tata Kelola Baik (Gabungan)'}
+                {mapViewMode === 'blud' ? 'Posyandu Aktif' : mapViewMode === 'ilp' ? 'Kunjungan Rumah' : mapViewMode === 'pkp' ? 'Melapor ke Pustu' : 'Capaian Gabungan'}
               </p>
               <div className="space-y-1.5">
                 {[
-                  { label: `Aman (≥ ${thresholdAman}%)`, color: hexToRgbA(colorAman, 0.75) },
-                  { label: `Cukup (${thresholdCukup}% - ${thresholdAman - 1}%)`, color: hexToRgbA(colorCukup, 0.75) },
-                  { label: `Kritis (< ${thresholdCukup}%)`, color: hexToRgbA(colorKritis, 0.75) },
+                  { label: `Baik (≥ ${thresholdAman}%)`, color: hexToRgbA(colorAman, 0.75) },
+                  { label: `Sedang (${thresholdCukup}% - ${thresholdAman - 1}%)`, color: hexToRgbA(colorCukup, 0.75) },
+                  { label: `Kurang (< ${thresholdCukup}%)`, color: hexToRgbA(colorKritis, 0.75) },
                   { label: 'Tidak Ada Data', color: 'rgba(241, 245, 249, 0.55)' },
                 ].map((b, i) => (
                   <div key={i} className="flex items-center gap-2">
@@ -1552,13 +1552,13 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
           {showCasualtyLegend && (
             <div>
               <p className="mb-2 text-[10px] font-extrabold uppercase tracking-widest text-teal-800">
-                Status Evaluasi Puskesmas
+                Kinerja Layanan Posyandu
               </p>
               <div className="space-y-1.5">
                 {[
-                  { label: 'Evaluasi Baik', color: '#10b981' },
-                  { label: 'Evaluasi Sedang', color: '#f59e0b' },
-                  { label: 'Evaluasi Kurang', color: '#ef4444' },
+                  { label: 'Kinerja Baik', color: '#10b981' },
+                  { label: 'Kinerja Sedang', color: '#f59e0b' },
+                  { label: 'Kinerja Kurang', color: '#ef4444' },
                 ].map((b, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="h-3.5 w-3.5 shrink-0 rounded-full border border-slate-200 shadow-sm animate-pulse" style={{ background: b.color }} />
@@ -1592,16 +1592,16 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
             {hoverTooltip.type === 'marker' ? (
               <>
                 <div className="flex justify-between">
-                  <span>Layanan</span>
-                  <span className="font-bold text-slate-950">{hoverTooltip.statusDokter}</span>
+                  <span>Status Keaktifan</span>
+                  <span className="font-bold text-slate-950">{hoverTooltip.statusDokter === 'Rawat Inap' ? 'Aktif' : 'Tidak Aktif'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>
-                    {mapViewMode === 'blud' ? 'Status BLUD' : mapViewMode === 'ilp' ? 'Kesiapan ILP' : mapViewMode === 'pkp' ? 'Evaluasi PKP' : 'Tata Kelola (Gabungan)'}
+                    {mapViewMode === 'blud' ? 'Status Aktif' : mapViewMode === 'ilp' ? 'Kunjungan Rumah' : mapViewMode === 'pkp' ? 'Lapor Pustu' : 'Capaian Gabungan'}
                   </span>
                   <span className="font-bold text-teal-800">
                     {mapViewMode === 'blud' 
-                      ? (hoverTooltip.capaianIlp >= 80 ? 'Baik' : hoverTooltip.capaianIlp >= 40 ? 'Sedang' : 'Kurang')
+                      ? (hoverTooltip.capaianIlp >= 80 ? 'Baik' : hoverTooltip.capaianIlp >= 60 ? 'Sedang' : 'Kurang')
                       : `${hoverTooltip.capaianIlp}%`
                     }
                   </span>
@@ -1610,17 +1610,17 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
             ) : (
               <>
                 <div className="flex justify-between">
-                  <span>Total Puskesmas</span>
-                  <span className="font-bold text-slate-900">{hoverTooltip.totalPuskesmas} PKM</span>
+                  <span>Total Posyandu</span>
+                  <span className="font-bold text-slate-900">{hoverTooltip.totalPuskesmas} Posyandu</span>
                 </div>
                 <div className="flex justify-between">
                   <span>
-                    {mapViewMode === 'blud' ? 'Capaian BLUD (Rata-rata)' : mapViewMode === 'ilp' ? 'Rata-rata ILP' : mapViewMode === 'pkp' ? 'Kelengkapan PKP' : 'Tata Kelola Gabungan'}
+                    {mapViewMode === 'blud' ? 'Rata-rata Aktif' : mapViewMode === 'ilp' ? 'Rata-rata Kunjungan' : mapViewMode === 'pkp' ? 'Rata-rata Melapor' : 'Capaian Gabungan'}
                   </span>
                   <span className="font-bold text-teal-850">{hoverTooltip.capaianIlp}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Status Wilayah</span>
+                  <span>Status Kinerja</span>
                   <span
                     className="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider"
                     style={{
@@ -1643,7 +1643,7 @@ export default function DisasterMap({ markers, userScope, onSelectProvince, isGu
                       }`
                     }}
                   >
-                    {hoverTooltip.capaianIlp >= thresholdAman ? 'Aman' : hoverTooltip.capaianIlp >= thresholdCukup ? 'Cukup' : 'Kritis'}
+                    {hoverTooltip.capaianIlp >= thresholdAman ? 'Baik' : hoverTooltip.capaianIlp >= thresholdCukup ? 'Sedang' : 'Kurang'}
                   </span>
                 </div>
               </>
