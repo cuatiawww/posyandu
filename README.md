@@ -119,3 +119,4 @@ DEMO_LOGIN_PASSWORD=demo12345
 - Nama package sudah diarahkan ke `dashboard-puskes`.
 - Beberapa modul internal masih memakai penamaan lama `psc` karena masih terhubung ke struktur halaman dan endpoint existing.
 - Branding dan konfigurasi dasar bisa dirapikan bertahap tanpa harus langsung mengubah seluruh route/API.
+
