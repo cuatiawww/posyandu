@@ -1,4 +1,4 @@
-import { getPuskesmasStats } from './puskesmasData'
+import posyanduBaseData from '@/data/posyandu_data.json'
 
 export type YearlyTrendItem = {
   tahun: string
@@ -67,54 +67,8 @@ export type PosyanduDashboardData = {
   markers: any[]
 }
 
-// 38 Provinces base values for year 2026
-const PROVINCES_BASE: Array<{ name: string; valid: number; numKabKota: number; numKabKotaMemenuhi: number }> = [
-  { name: 'ACEH', valid: 7850, numKabKota: 23, numKabKotaMemenuhi: 4 },
-  { name: 'SUMATERA UTARA', valid: 15420, numKabKota: 33, numKabKotaMemenuhi: 6 },
-  { name: 'SUMATERA BARAT', valid: 6210, numKabKota: 19, numKabKotaMemenuhi: 3 },
-  { name: 'RIAU', valid: 7120, numKabKota: 12, numKabKotaMemenuhi: 2 },
-  { name: 'KEPULAUAN RIAU', valid: 1980, numKabKota: 7, numKabKotaMemenuhi: 2 },
-  { name: 'JAMBI', valid: 3820, numKabKota: 11, numKabKotaMemenuhi: 2 },
-  { name: 'SUMATERA SELATAN', valid: 9430, numKabKota: 17, numKabKotaMemenuhi: 3 },
-  { name: 'BENGKULU', valid: 2450, numKabKota: 10, numKabKotaMemenuhi: 1 },
-  { name: 'KEP. BANGKA BELITUNG', valid: 1540, numKabKota: 7, numKabKotaMemenuhi: 2 },
-  { name: 'LAMPUNG', valid: 9860, numKabKota: 15, numKabKotaMemenuhi: 3 },
-  { name: 'BANTEN', valid: 11240, numKabKota: 8, numKabKotaMemenuhi: 2 },
-  { name: 'DKI JAKARTA', valid: 5413, numKabKota: 6, numKabKotaMemenuhi: 3 }, // DKI is highly active
-  { name: 'JAWA BARAT', valid: 52400, numKabKota: 27, numKabKotaMemenuhi: 7 },
-  { name: 'JAWA TENGAH', valid: 44250, numKabKota: 35, numKabKotaMemenuhi: 9 },
-  { name: 'DI YOGYAKARTA', valid: 5120, numKabKota: 5, numKabKotaMemenuhi: 3 }, // DIY is highly active
-  { name: 'JAWA TIMUR', valid: 48950, numKabKota: 38, numKabKotaMemenuhi: 10 },
-  { name: 'BALI', valid: 4210, numKabKota: 9, numKabKotaMemenuhi: 4 }, // Bali is highly active
-  { name: 'NUSA TENGGARA BARAT', valid: 7820, numKabKota: 10, numKabKotaMemenuhi: 3 },
-  { name: 'NUSA TENGGARA TIMUR', valid: 9870, numKabKota: 22, numKabKotaMemenuhi: 2 },
-  { name: 'KALIMANTAN BARAT', valid: 6540, numKabKota: 14, numKabKotaMemenuhi: 2 },
-  { name: 'KALIMANTAN TENGAH', valid: 4120, numKabKota: 14, numKabKotaMemenuhi: 1 },
-  { name: 'KALIMANTAN SELATAN', valid: 5180, numKabKota: 13, numKabKotaMemenuhi: 2 },
-  { name: 'KALIMANTAN TIMUR', valid: 4820, numKabKota: 10, numKabKotaMemenuhi: 2 },
-  { name: 'KALIMANTAN UTARA', valid: 1120, numKabKota: 5, numKabKotaMemenuhi: 1 },
-  { name: 'SULAWESI UTARA', valid: 3820, numKabKota: 15, numKabKotaMemenuhi: 2 },
-  { name: 'GORONTALO', valid: 1210, numKabKota: 6, numKabKotaMemenuhi: 2 }, // Target Gorontalo
-  { name: 'SULAWESI TENGAH', valid: 4250, numKabKota: 13, numKabKotaMemenuhi: 1 },
-  { name: 'SULAWESI BARAT', valid: 1850, numKabKota: 6, numKabKotaMemenuhi: 0 },
-  { name: 'SULAWESI SELATAN', valid: 11840, numKabKota: 24, numKabKotaMemenuhi: 5 },
-  { name: 'SULAWESI TENGGARA', valid: 3950, numKabKota: 17, numKabKotaMemenuhi: 1 },
-  { name: 'MALUKU', valid: 2540, numKabKota: 11, numKabKotaMemenuhi: 1 },
-  { name: 'MALUKU UTARA', valid: 1820, numKabKota: 10, numKabKotaMemenuhi: 1 },
-  { name: 'PAPUA BARAT', valid: 950, numKabKota: 7, numKabKotaMemenuhi: 0 },
-  { name: 'PAPUA', valid: 1840, numKabKota: 9, numKabKotaMemenuhi: 1 },
-  { name: 'PAPUA SELATAN', valid: 840, numKabKota: 4, numKabKotaMemenuhi: 0 },
-  { name: 'PAPUA TENGAH', valid: 980, numKabKota: 8, numKabKotaMemenuhi: 0 },
-  { name: 'PAPUA PEGUNUNGAN', valid: 1150, numKabKota: 8, numKabKotaMemenuhi: 0 },
-  { name: 'PAPUA BARAT DAYA', valid: 850, numKabKota: 6, numKabKotaMemenuhi: 0 },
-]
-
-// Base target percentages for indicators Ke-6 by year
-const TARGET_BY_YEAR: Record<string, number> = {
-  '2024': 15,
-  '2025': 20,
-  '2026': 25,
-}
+const PROVINCES_BASE = posyanduBaseData.provinces
+const TARGET_BY_YEAR = posyanduBaseData.targets as Record<string, number>
 
 // Factors to scale metrics by TimeFrame period
 function getPeriodScalingFactor(timeFrame: string, period: string): number {
@@ -352,32 +306,55 @@ export function getPosyanduStats(
     { stage: 'Melapor ke Pustu', value: totalLaporPustu, percentage: totalValid > 0 ? Math.round((totalLaporPustu / totalValid) * 100) : 0, color: '#f59e0b' },
   ]
 
-  // Get spatial markers from Puskesmas layer and convert them dynamically to Posyandu
-  const pkmStats = getPuskesmasStats(provinceName, kabupatenName)
-  const markers = pkmStats.markers.map(m => {
-    // Determine status_evaluasi based on Posyandu metrics:
-    // If it has good nakes rate, let's treat it as status_evaluasi = 'Baik'
+  // Filter spatial markers for Posyandu from our JSON dataset
+  const provClean = provinceName.trim().toUpperCase()
+  const kabClean = kabupatenName.trim().toUpperCase()
+  let filteredMarkers = posyanduBaseData.markers
+
+  if (provClean && provClean !== 'NASIONAL' && provClean !== 'SEMUA PROVINSI') {
+    filteredMarkers = filteredMarkers.filter(m => m.provinsi.toUpperCase() === provClean)
+  }
+  if (kabClean && kabClean !== 'SEMUA KAB/KOTA') {
+    filteredMarkers = filteredMarkers.filter(m => m.kabupaten.toUpperCase() === kabClean)
+  }
+
+  // Fallback: If no markers match, return a generic one so map doesn't crash
+  if (filteredMarkers.length === 0) {
+    filteredMarkers = [
+      {
+        kode_trans: 'POS-GEN-01',
+        jenis_bencana: 'Posyandu Wilayah ' + (kabupatenName || provinceName || 'Nasional'),
+        lat: -2.5,
+        lng: 118.0,
+        provinsi: provClean || 'NASIONAL',
+        kabupaten: kabClean || 'KABUPATEN',
+        kecamatan: 'Kecamatan Utama',
+        nama_desa: 'Desa Utama',
+        total_korban: 0,
+        is_ranap: true,
+        karakteristik: 'Biasa',
+        alkes_pct: 75,
+        obat_pct: 80,
+        nakes_pct: 70,
+        status_evaluasi: 'Sedang'
+      }
+    ]
+  }
+
+  const markers = filteredMarkers.map(m => {
     let status_evaluasi: 'Baik' | 'Sedang' | 'Kurang' = 'Sedang'
     if (m.nakes_pct >= 85) {
       status_evaluasi = 'Baik'
     } else if (m.nakes_pct < 60) {
       status_evaluasi = 'Kurang'
     }
-    
-    // Map percentages
-    const valid = 1
+
     const aktif = m.nakes_pct >= 60 ? 1 : 0
-    const siklusHidup = (aktif && m.alkes_pct >= 60) ? 1 : 0
-    
     return {
       ...m,
-      jenis_bencana: m.jenis_bencana.replace('Puskesmas', 'Posyandu'),
       status_evaluasi,
-      is_ranap: aktif === 1, // mapping 'is_ranap' to 'aktif' for map markers compatibility
-      karakteristik: m.karakteristik,
-      alkes_pct: m.alkes_pct, // Kunjungan Rumah rate mapping
-      obat_pct: m.obat_pct,   // Lapor Pustu rate mapping
-      nakes_pct: m.nakes_pct  // Aktif rate mapping
+      is_ranap: aktif === 1,
+      total_korban: 0
     }
   })
 

@@ -27,7 +27,11 @@ import {
   Download,
   BarChart3,
   Table as TableIcon,
+  Eye,
+  Video,
+  Play,
 } from 'lucide-react'
+
 import {
   PieChart,
   Pie,
@@ -48,7 +52,9 @@ import {
 } from 'recharts'
 import { useAuthStore } from '@/lib/authStore'
 import FilterDropdownBar, { type FilterSummary } from '@/components/landing/FilterDropdownBar'
-import { getPosyanduStats, type PosyanduDashboardData } from '@/lib/posyanduData'
+import Modal from '@/components/Modal'
+
+import { type PosyanduDashboardData } from '@/lib/posyanduData'
 import PerformanceBreakdownTable from './PerformanceBreakdownTable'
 
 // Dynamically import map component to completely bypass SSR/window issues in Next.js
@@ -131,7 +137,52 @@ const CustomPosyanduTooltip = ({ active, payload }: { active?: boolean; payload?
   return null
 }
 
+function parseBoldText(text: string) {
+  const parts = text.split(/(\*\*.*?\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-extrabold text-slate-900">{part.slice(2, -2)}</strong>
+    }
+    return part
+  })
+}
+
+function renderMarkdown(text: string) {
+  if (!text) return null
+  const lines = text.split('\n')
+  return lines.map((line, idx) => {
+    if (line.startsWith('# ')) {
+      return <h1 key={idx} className="text-2xl font-black text-slate-900 mt-5 mb-3">{line.replace('# ', '')}</h1>
+    }
+    if (line.startsWith('## ')) {
+      return <h2 key={idx} className="text-xl font-black text-slate-800 mt-4 mb-2.5 border-b pb-1.5">{line.replace('## ', '')}</h2>
+    }
+    if (line.startsWith('### ')) {
+      return <h3 key={idx} className="text-lg font-bold text-slate-800 mt-3.5 mb-2">{line.replace('### ', '')}</h3>
+    }
+    if (line.startsWith('- ') || line.startsWith('* ')) {
+      return (
+        <ul key={idx} className="list-disc pl-5 mb-2 text-slate-700 text-sm">
+          <li>{parseBoldText(line.substring(2))}</li>
+        </ul>
+      )
+    }
+    if (/^\d+\.\s/.test(line)) {
+      return (
+        <ol key={idx} className="list-decimal pl-5 mb-2 text-slate-700 text-sm">
+          <li>{parseBoldText(line.replace(/^\d+\.\s/, ''))}</li>
+        </ol>
+      )
+    }
+    if (line.trim() === '') {
+      return <div key={idx} className="h-1.5" />
+    }
+    return <p key={idx} className="text-sm text-slate-700 leading-relaxed mb-2.5">{parseBoldText(line)}</p>
+  })
+}
+
 export default function DashboardPosyanduPage() {
+
   const { token, isInitialized, user } = useAuthStore()
 
   const [data, setData] = useState<PosyanduDashboardData | null>(null)
@@ -139,7 +190,13 @@ export default function DashboardPosyanduPage() {
   const [error, setError] = useState<string | null>(null)
   const [generatingAi, setGeneratingAi] = useState(false)
   const [aiInsight, setAiInsight] = useState<string | null>(null)
+  const [aiRecommendations, setAiRecommendations] = useState<string[]>([])
+  const [detailedAnalysis, setDetailedAnalysis] = useState<string>('')
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<'text' | 'video'>('text')
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
+
+
 
   // Primitive states for region filtering
   const [cakupan, setCakupan] = useState('nasional')
@@ -317,8 +374,23 @@ export default function DashboardPosyanduPage() {
     try {
       setLoading(true)
       setError(null)
-      const res = getPosyanduStats(province, kabupaten, selectedTimeframe, selectedYear, selectedPeriod)
-      setData(res)
+      const queryParams = new URLSearchParams({
+        province: province || '',
+        kabupaten: kabupaten || '',
+        timeFrame: selectedTimeframe || 'Tahunan',
+        year: selectedYear || '2026',
+        period: selectedPeriod || ''
+      })
+      const res = await fetch(`/api/posyandu-stats?${queryParams.toString()}`)
+      if (!res.ok) {
+        throw new Error(`Failed to fetch stats: ${res.statusText}`)
+      }
+      const json = await res.json()
+      if (json.success && json.data) {
+        setData(json.data)
+      } else {
+        throw new Error(json.error || 'Gagal memuat data statistik.')
+      }
     } catch (err) {
       console.error('[posyandu-stats]', err)
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan sistem.')
@@ -379,17 +451,40 @@ export default function DashboardPosyanduPage() {
   }, [data?.wilayahBreakdown])
 
   // AI Insight Generator
-  const generateAiInsight = () => {
+  const generateAiInsight = async () => {
     if (!data) return
     setGeneratingAi(true)
-    setTimeout(() => {
-      if (data.totalValid === 0) {
-        setAiInsight(`[ANALISIS KINERJA POSYANDU]
-Tidak ada data Posyandu terdaftar untuk wilayah ini.`)
-        setGeneratingAi(false)
-        return
+    setAiInsight(null)
+    setAiRecommendations([])
+    setDetailedAnalysis('')
+    
+    try {
+      const response = await fetch('/api/ai-insight', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          province,
+          kabupaten,
+          year: selectedYear,
+          timeFrame: selectedTimeframe,
+          period: selectedPeriod,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Gagal mengambil analisis AI')
       }
 
+      const result = await response.json()
+      setAiInsight(result.summary)
+      setAiRecommendations(result.recommendations || [])
+      setDetailedAnalysis(result.detailedAnalysis || '')
+    } catch (err) {
+      console.error('Error generating AI insight:', err)
+      
+      // Fallback lokal jika terjadi error jaringan / server
       const totalValid = data.totalValid
       const totalAktif = data.totalAktif
       const totalSiklusHidup = data.totalSiklusHidupAktif
@@ -400,33 +495,28 @@ Tidak ada data Posyandu terdaftar untuk wilayah ini.`)
       analysisText += `\nDi wilayah ${getRegionLabel()}, tercatat sebanyak ${totalValid.toLocaleString('id-ID')} Posyandu Valid.`
       analysisText += `\n- Posyandu Aktif operasional bulanan: ${totalAktif.toLocaleString('id-ID')} (${pctAktif}%).`
       analysisText += `\n- Posyandu Siklus Hidup yang Aktif: ${totalSiklusHidup.toLocaleString('id-ID')} (${pctSiklusHidup}%).`
-      analysisText += `\n- Kepatuhan Target Kabupaten/Kota: ${data.pctKabKotaMemenuhi}% (Target Nasional Tahun ${selectedYear}: ${data.targetPct}%).`
-      
-      let recommendations = `\n\nREKOMENDASI INTERVENSI DIREKTORAT:`
-      if (pctAktif < 80) {
-        recommendations += `\n1. Tingkatkan keaktifan operasional bulanan Posyandu dengan penguatan kapasitas kader dan dukungan dana operational.`
-      }
-      if (pctSiklusHidup < 75) {
-        recommendations += `\n2. Dorong penerapan Posyandu Siklus Hidup yang Aktif dengan menyediakan panduan teknis pelayanan terintegrasi untuk seluruh siklus hidup (balita, remaja, dewasa, lansia).`
-      }
-      if (data.pctKabKotaMemenuhi < data.targetPct) {
-        recommendations += `\n3. Lakukan pembinaan khusus bagi kabupaten/kota dengan kepatuhan rendah (<${data.targetPct}% daerah memenuhi target) untuk mencapai target nasional.`
-      }
-      if (recommendations === `\n\nREKOMENDASI INTERVENSI DIREKTORAT:`) {
-        recommendations += `\n1. Kinerja layanan Posyandu di wilayah terpilih sangat prima dan memenuhi target nasional. Pertahankan koordinasi surveillance berkala.`
-      }
 
-      setAiInsight(analysisText + recommendations)
+      const localRecs = [
+        `<strong>Optimalisasi Keaktifan</strong> - Hubungi dinas setempat untuk menaikkan persentase keaktifan bulanan wilayah di bawah target.`,
+        `<strong>Pelatihan Layanan Siklus Hidup</strong> - Selenggarakan bimtek kader terpadu agar Posyandu mampu melayani seluruh sasaran usia.`,
+        `<strong>Integrasi Pelaporan Pustu</strong> - Sempurnakan sistem pencatatan kunjungan rumah agar pelaporan ke Pustu terkirim secara tepat waktu.`
+      ]
+
+      setAiInsight(analysisText)
+      setAiRecommendations(localRecs)
+      setDetailedAnalysis(`# Analisis Penilaian Kepatuhan & Keaktifan Layanan Posyandu - ${getRegionLabel()}\n\nAnalisis fallback lokal diaktifkan. Silakan cek koneksi internet dan API Key Anda.`)
+    } finally {
       setGeneratingAi(false)
-    }, 1200)
+    }
   }
 
   // Pre-generate AI insight once data is loaded
   useEffect(() => {
-    if (data && !aiInsight) {
+    if (data) {
       generateAiInsight()
     }
   }, [data])
+
 
   if (!isInitialized) {
     return (
@@ -1002,7 +1092,7 @@ Tidak ada data Posyandu terdaftar untuk wilayah ini.`)
           <div className="space-y-3">
             {/* ── AI Insight Card ── */}
             <article
-              className="relative overflow-hidden border border-[#b7d9d8] p-5 xl:h-[415px] xl:w-[381px]"
+              className="relative overflow-hidden border border-[#b7d9d8] p-5 xl:min-h-[415px] xl:h-auto xl:w-[381px]"
               style={{
                 backgroundImage: "url('/bg insght.png')",
                 backgroundSize: 'cover',
@@ -1031,25 +1121,53 @@ Tidak ada data Posyandu terdaftar untuk wilayah ini.`)
                 </div>
 
                 {/* Body text */}
-                <div className="mt-3 rounded-xl border-l-[3px] border-l-[#16b7b2] bg-white/60 px-3 py-2.5 backdrop-blur-[2px] overflow-y-auto max-h-[180px] min-h-[140px]">
-                  <p className="text-sm font-semibold leading-relaxed text-[#2f4040] sm:text-base whitespace-pre-line">
+                <div className="mt-3 rounded-xl border-l-[3px] border-l-[#16b7b2] bg-white/60 px-3 py-2.5 backdrop-blur-[2px] overflow-y-auto max-h-[190px] min-h-[140px] flex-1">
+                  <p className="text-sm font-semibold leading-relaxed text-[#2f4040] sm:text-base whitespace-pre-line text-slate-800">
                     {aiInsight || 'Klik tombol di bawah untuk membuat analisis.'}
                   </p>
+                  
+                  {aiRecommendations && aiRecommendations.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-slate-200/50 pt-2">
+                      <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Rekomendasi Utama:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        {aiRecommendations.map((rec, i) => (
+                          <li 
+                            key={i} 
+                            className="text-xs font-semibold text-slate-700 leading-normal" 
+                            dangerouslySetInnerHTML={{ __html: rec }} 
+                          />
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 {/* Divider */}
                 <div className="my-4 h-px bg-[rgba(0,0,0,0.08)]" />
 
-                <div className="mt-auto">
+                <div className="mt-auto flex flex-col gap-2">
+                  {aiInsight && !generatingAi && (
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(true)}
+                      className="group flex w-full items-center justify-center gap-2 rounded-[14px] bg-white border border-[#4d90d0]/60 px-4 py-2.5 text-[#4d90d0] shadow-[0_2px_8px_rgba(77,144,208,0.06)] transition-all hover:bg-slate-50 hover:border-[#4d90d0] hover:-translate-y-0.5 active:scale-[0.99]"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span className="text-xs font-black uppercase tracking-[0.1em]">
+                        Lihat Analisis Lengkap
+                      </span>
+                    </button>
+                  )}
+
                   <button
                     onClick={generateAiInsight}
                     disabled={generatingAi}
-                    className="group flex w-full items-center justify-center gap-3 rounded-[14px] bg-gradient-to-r from-[#4d90d0] to-[#6c5ce7] px-4 py-3.5 text-white shadow-[0_4px_14px_rgba(77,144,208,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(108,92,231,0.42)] active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
+                    className="group flex w-full items-center justify-center gap-3 rounded-[14px] bg-gradient-to-r from-[#4d90d0] to-[#6c5ce7] px-4 py-3 text-white shadow-[0_4px_14px_rgba(77,144,208,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(108,92,231,0.42)] active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
-                      {generatingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
+                      {generatingAi ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                     </span>
-                    <span className="text-sm font-black uppercase tracking-[0.1em]">
+                    <span className="text-xs font-black uppercase tracking-[0.1em]">
                       {generatingAi ? 'Sedang Menganalisis...' : 'Analisis AI'}
                     </span>
                   </button>
@@ -1706,11 +1824,151 @@ Tidak ada data Posyandu terdaftar untuk wilayah ini.`)
 
             {/* Footer */}
             <div className="border-t border-slate-100 p-4 bg-[#fafcfc] text-center text-[10px] text-slate-400">
+
               Kementerian Kesehatan Republik Indonesia · Sistem Informasi Evaluasi Kinerja Posyandu
             </div>
           </div>
         </div>
       )}
+
+      {/* AI Detailed Analysis Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setActiveTab('text') // Reset tab on close
+        }}
+        title={`Analisis AI Detail: ${getRegionLabel()}`}
+        size="lg"
+      >
+        {/* Tab Switcher */}
+        <div className="flex border-b border-slate-200 mb-6 gap-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab('text')}
+            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${
+              activeTab === 'text'
+                ? 'border-teal-650 text-teal-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <FileText className="h-4 w-4" />
+            Laporan Analisis
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('video')}
+            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${
+              activeTab === 'video'
+                ? 'border-teal-650 text-teal-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <Video className="h-4 w-4" />
+            AI Video Presenter
+          </button>
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Detailed analysis / Video section (left) */}
+          <div className="flex-1 space-y-4 min-w-0">
+            {activeTab === 'text' ? (
+              <div className="rounded-2xl bg-slate-50 border border-slate-100 p-6 shadow-inner">
+                <div className="prose max-w-none text-slate-700">
+                  {renderMarkdown(detailedAnalysis) || (
+                    <p className="text-slate-400 italic">Tidak ada analisis terperinci yang tersedia.</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Video Player Box */}
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-lg flex flex-col items-center justify-center">
+                  <video
+                    className="absolute inset-0 h-full w-full object-cover"
+                    src="https://assets.mixkit.co/videos/preview/mixkit-doctor-explaining-something-on-a-digital-tablet-41225-large.mp4"
+                    controls
+                    autoPlay
+                    muted
+                    loop
+                  />
+                </div>
+
+                
+                {/* Audio Waveform/Visualizer & Subtitles Explaining the AI analysis */}
+                <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 shadow-sm">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-0.5">
+                      <span className="h-3 w-1 bg-indigo-500 rounded-full animate-[bounce_1.2s_infinite_100ms]" />
+                      <span className="h-5 w-1 bg-indigo-650 rounded-full animate-[bounce_1.2s_infinite_200ms]" />
+                      <span className="h-4 w-1 bg-indigo-500 rounded-full animate-[bounce_1.2s_infinite_300ms]" />
+                      <span className="h-2 w-1 bg-indigo-400 rounded-full animate-[bounce_1.2s_infinite_400ms]" />
+                    </div>
+                    <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">
+                      AI Virtual Speaker Subtitle Track
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700 italic leading-relaxed">
+                    "{aiInsight || 'Membacakan ringkasan analisis untuk wilayah terpilih...'}"
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Key metadata & highlights section (right) */}
+          <div className="w-full lg:w-[320px] shrink-0 space-y-4">
+            <div className="rounded-xl border border-teal-100 bg-teal-50/40 p-5">
+              <h4 className="text-sm font-black uppercase text-teal-800 tracking-wider mb-3">Ringkasan Wilayah</h4>
+              
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between border-b border-teal-50 pb-2">
+                  <span className="text-slate-500 font-bold">Total Valid:</span>
+                  <span className="font-extrabold text-slate-800">{data?.totalValid?.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between border-b border-teal-50 pb-2">
+                  <span className="text-slate-500 font-bold">Keaktifan:</span>
+                  <span className="font-extrabold text-slate-800">
+                    {data?.totalValid ? Math.round((data.totalAktif / data.totalValid) * 100) : 0}%
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-teal-50 pb-2">
+                  <span className="text-slate-500 font-bold">Siklus Hidup:</span>
+                  <span className="font-extrabold text-slate-800">
+                    {data?.totalValid ? Math.round((data.totalSiklusHidupAktif / data.totalValid) * 100) : 0}%
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-teal-50 pb-2">
+                  <span className="text-slate-500 font-bold">Kunjungan Rumah:</span>
+                  <span className="font-extrabold text-slate-800">{data?.totalKunjunganRumah?.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between pb-1">
+                  <span className="text-slate-500 font-bold">Target Kepatuhan:</span>
+                  <span className={`font-black ${data?.statusTarget === 'MEMENUHI' ? 'text-emerald-600' : 'text-rose-500'}`}>
+                    {data?.pctKabKotaMemenuhi}% / {data?.targetPct}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {aiRecommendations && aiRecommendations.length > 0 && (
+              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+                <h4 className="text-sm font-black uppercase text-slate-800 tracking-wider mb-3">Rekomendasi</h4>
+                <ul className="space-y-3">
+                  {aiRecommendations.map((rec, i) => (
+                    <li 
+                      key={i} 
+                      className="text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-2.5 border-l-2 border-l-[#4d90d0]" 
+                      dangerouslySetInnerHTML={{ __html: rec }} 
+                    />
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
+

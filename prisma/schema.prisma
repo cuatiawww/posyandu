@@ -1,0 +1,25 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model AIInsightCache {
+  id               String   @id @default(uuid())
+  province         String
+  kabupaten        String
+  year             String
+  timeFrame        String
+  period           String
+  summary          String
+  recommendations  String   // JSON string representing an array of recommendations
+  detailedAnalysis String   // Markdown representation of the detailed analysis
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([province, kabupaten, year, timeFrame, period])
+}
