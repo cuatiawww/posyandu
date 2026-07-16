@@ -8,18 +8,26 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model AIInsightCache {
+model AIInsightHistory {
   id               String   @id @default(uuid())
   province         String
   kabupaten        String
   year             String
   timeFrame        String
   period           String
-  summary          String
-  recommendations  String   // JSON string representing an array of recommendations
-  detailedAnalysis String   // Markdown representation of the detailed analysis
+  summary          String   @db.Text
+  recommendations  String   @db.Text // JSON string representing an array of recommendations
+  detailedAnalysis String   @db.Text // Markdown representation of the detailed analysis
+  
+  // Video Generation Fields
+  videoScript      String?  @db.Text // Naskah pendek presenter
+  videoUrl         String?  // URL video hasil generate (.mp4)
+  videoStatus      String   @default("PENDING") // PENDING | GENERATING | COMPLETED | FAILED
+  videoJobId       String?  // ID pekerjaan di API video untuk tracking status
+  
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  @@unique([province, kabupaten, year, timeFrame, period])
+  @@index([province, kabupaten, year, timeFrame, period])
+  @@index([createdAt])
 }

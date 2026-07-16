@@ -195,6 +195,14 @@ export default function DashboardPosyanduPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'text' | 'video'>('text')
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
+  
+  // Variabel state baru untuk fitur Riwayat AI & Video Presenter
+  const [historyList, setHistoryList] = useState<{ id: string; createdAt: string }[]>([])
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string>('')
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
+  const [videoScript, setVideoScript] = useState<string | null>(null)
+  const [videoStatus, setVideoStatus] = useState<string>('PENDING')
+  const [aiCreatedAt, setAiCreatedAt] = useState<string | null>(null)
 
 
 
@@ -451,13 +459,22 @@ export default function DashboardPosyanduPage() {
   }, [data?.wilayahBreakdown])
 
   // AI Insight Generator
-  const generateAiInsight = async () => {
+  const generateAiInsight = async (historyId?: string) => {
     if (!data) return
     setGeneratingAi(true)
-    setAiInsight(null)
-    setAiRecommendations([])
-    setDetailedAnalysis('')
-    
+
+    // Reset state hanya jika kita membuat analisis baru (bukan memuat lama)
+    if (!historyId) {
+      setAiInsight(null)
+      setAiRecommendations([])
+      setDetailedAnalysis('')
+      setVideoUrl(null)
+      setVideoScript(null)
+      setVideoStatus('PENDING')
+      setSelectedHistoryId('')
+      setAiCreatedAt(null)
+    }
+
     try {
       const response = await fetch('/api/ai-insight', {
         method: 'POST',
@@ -470,6 +487,7 @@ export default function DashboardPosyanduPage() {
           year: selectedYear,
           timeFrame: selectedTimeframe,
           period: selectedPeriod,
+          historyId,
         }),
       })
 
@@ -481,6 +499,14 @@ export default function DashboardPosyanduPage() {
       setAiInsight(result.summary)
       setAiRecommendations(result.recommendations || [])
       setDetailedAnalysis(result.detailedAnalysis || '')
+      setVideoUrl(result.videoUrl || null)
+      setVideoScript(result.videoScript || null)
+      setVideoStatus(result.videoStatus || 'PENDING')
+      setHistoryList(result.historyList || [])
+      setAiCreatedAt(result.createdAt || null)
+      if (result.id) {
+        setSelectedHistoryId(result.id)
+      }
     } catch (err) {
       console.error('Error generating AI insight:', err)
       
@@ -505,10 +531,68 @@ export default function DashboardPosyanduPage() {
       setAiInsight(analysisText)
       setAiRecommendations(localRecs)
       setDetailedAnalysis(`# Analisis Penilaian Kepatuhan & Keaktifan Layanan Posyandu - ${getRegionLabel()}\n\nAnalisis fallback lokal diaktifkan. Silakan cek koneksi internet dan API Key Anda.`)
+      setAiCreatedAt(new Date().toISOString())
     } finally {
       setGeneratingAi(false)
     }
   }
+
+  // Format waktu generate untuk label info modal
+  const formattedAiTime = useMemo(() => {
+    if (!aiCreatedAt) return ''
+    const dateObj = new Date(aiCreatedAt)
+    const dateStr = dateObj.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    })
+    const timeStr = dateObj.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    return `${dateStr} pukul ${timeStr} WIB`
+  }, [aiCreatedAt])
+
+  // Polling status video jika masih PENDING atau GENERATING
+  useEffect(() => {
+    if (!isModalOpen || !selectedHistoryId) return
+    if (videoStatus !== 'PENDING' && videoStatus !== 'GENERATING') return
+
+    let isMounted = true
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/ai-insight', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            province,
+            kabupaten,
+            year: selectedYear,
+            timeFrame: selectedTimeframe,
+            period: selectedPeriod,
+            historyId: selectedHistoryId,
+          }),
+        })
+
+        if (response.ok && isMounted) {
+          const result = await response.json()
+          if (result.videoStatus) {
+            setVideoStatus(result.videoStatus)
+          }
+          if (result.videoUrl) {
+            setVideoUrl(result.videoUrl)
+          }
+        }
+      } catch (err) {
+        console.error('Error polling video status:', err)
+      }
+    }, 5000)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
+  }, [isModalOpen, selectedHistoryId, videoStatus])
 
   // Pre-generate AI insight once data is loaded
   useEffect(() => {
@@ -1160,7 +1244,7 @@ export default function DashboardPosyanduPage() {
                   )}
 
                   <button
-                    onClick={generateAiInsight}
+                    onClick={() => generateAiInsight()}
                     disabled={generatingAi}
                     className="group flex w-full items-center justify-center gap-3 rounded-[14px] bg-gradient-to-r from-[#4d90d0] to-[#6c5ce7] px-4 py-3 text-white shadow-[0_4px_14px_rgba(77,144,208,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(108,92,231,0.42)] active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
                   >
@@ -1841,6 +1925,121 @@ export default function DashboardPosyanduPage() {
         title={`Analisis AI Detail: ${getRegionLabel()}`}
         size="lg"
       >
+        {/* Dropdown Histori Analisis */}
+        {historyList.length > 0 && (
+          <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+            <span className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+              <RefreshCw className="h-3.5 w-3.5 text-teal-650 animate-[spin_4s_linear_infinite]" />
+              Pilih Riwayat Analisis:
+            </span>
+            <select
+              value={selectedHistoryId}
+              onChange={(e) => generateAiInsight(e.target.value)}
+              className="text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 shadow-sm cursor-pointer hover:bg-slate-100 transition-colors"
+            >
+              {historyList.map((hist, idx) => {
+                const dateStr = new Date(hist.createdAt).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }) + ' WIB'
+                return (
+                  <option key={hist.id} value={hist.id}>
+                    {idx === 0 ? `[Terbaru] - ${dateStr}` : dateStr}
+                  </option>
+                )
+              })}
+            </select>
+          </div>
+        )}
+
+        {/* Dynamic Alert and Disclaimer Section */}
+        {(() => {
+          if (!data) return null
+
+          const totalValid = data.totalValid || 0
+          const keaktifanPct = totalValid ? Math.round((data.totalAktif / totalValid) * 100) : 0
+          const lifecyclePct = totalValid ? Math.round((data.totalSiklusHidupAktif / totalValid) * 100) : 0
+          const isMemenuhi = data.statusTarget === 'MEMENUHI'
+
+          const warnings = []
+          if (keaktifanPct < 80) {
+            warnings.push(`Tingkat keaktifan bulanan (${keaktifanPct}%) berada di bawah target standar nasional 80%`)
+          }
+          if (lifecyclePct < 60) {
+            warnings.push(`Tingkat keaktifan siklus hidup (${lifecyclePct}%) di bawah target optimal 60%`)
+          }
+          if (!isMemenuhi) {
+            warnings.push(`Pencapaian target kepatuhan (${data?.pctKabKotaMemenuhi || 0}%) belum memenuhi target nasional (${data?.targetPct || 0}%)`)
+          }
+
+          // Tentukan level keparahan (Kritis vs Siaga vs Aman)
+          let severity: 'critical' | 'warning' | 'safe' = 'safe'
+          if (keaktifanPct < 60 || lifecyclePct < 40 || (!isMemenuhi && (data.pctKabKotaMemenuhi || 0) < 10)) {
+            severity = 'critical'
+          } else if (keaktifanPct < 80 || lifecyclePct < 60 || !isMemenuhi) {
+            severity = 'warning'
+          }
+
+          return (
+            <div className="space-y-4 mb-6">
+              {/* Dynamic Alert Banner */}
+              <div className={`p-4 rounded-xl border flex gap-3 items-start ${
+                severity === 'critical'
+                  ? 'bg-rose-50 border-rose-100 text-rose-800'
+                  : severity === 'warning'
+                  ? 'bg-amber-50 border-amber-100 text-amber-800'
+                  : 'bg-emerald-50 border-emerald-100 text-emerald-800'
+              }`}>
+                {severity === 'critical' ? (
+                  <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5 animate-pulse" />
+                ) : severity === 'warning' ? (
+                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                ) : (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <h5 className="font-extrabold text-sm mb-1 uppercase tracking-wide">
+                    {severity === 'critical' 
+                      ? 'Rekomendasi Utama: Perlu Perhatian Khusus (Kritis)' 
+                      : severity === 'warning'
+                      ? 'Rekomendasi Utama: Status Siaga / Perlu Antisipasi'
+                      : 'Rekomendasi Utama: Kondisi Baik & Stabil'}
+                  </h5>
+                  <p className="text-xs font-semibold leading-relaxed">
+                    {severity === 'critical'
+                      ? `Wilayah ini berada dalam kondisi KRITIS dan memerlukan intervensi darurat segera karena: ${warnings.join(', serta ')}.`
+                      : severity === 'warning'
+                      ? `Wilayah ini berada dalam status SIAGA (perlu perhatian sedang) karena: ${warnings.join(', serta ')}.`
+                      : `Kinerja Posyandu di wilayah ini dalam kondisi prima. Seluruh indikator utama (keaktifan bulanan, siklus hidup, dan pencapaian target kepatuhan) telah memenuhi target standar nasional.`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Disclaimer Info Box */}
+              <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/40 text-blue-900 text-xs font-semibold space-y-2">
+                <div className="flex items-center gap-2 text-blue-700">
+                  <Info className="h-4 w-4 shrink-0" />
+                  <span className="font-black uppercase tracking-wider">Informasi Generate AI</span>
+                </div>
+                <p className="leading-relaxed">
+                  Analisis Detail AI ini merupakan hasil generate otomatis berdasarkan kalkulasi database Posyandu untuk wilayah <strong className="font-extrabold">{getRegionLabel()}</strong>. AI ini dikonfigurasi khusus hanya untuk menganalisis data dashboard <strong className="font-extrabold">{getRegionLabel()}</strong>.
+                </p>
+                {aiCreatedAt && (
+                  <p className="text-[11px] text-blue-800/80 font-bold">
+                    🕒 Yang Anda lihat saat ini adalah hasil generate AI pada tanggal <strong className="font-extrabold">{formattedAiTime}</strong>.
+                  </p>
+                )}
+                <div className="border-t border-blue-100 pt-2 text-[10px] text-blue-700/80 font-medium">
+                  <strong className="font-bold">DISCLAIMER:</strong> Semua informasi, estimasi tren, dan rekomendasi taktis yang disajikan merupakan analisis dari model AI (Google Gemini). Hasil analisis ini ditujukan sebagai referensi pembantu pengambilan keputusan dinas kesehatan setempat dan tidak menggantikan keputusan medis formal maupun regulasi resmi dari kementerian terkait.
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Tab Switcher */}
         <div className="flex border-b border-slate-200 mb-6 gap-4">
           <button
@@ -1883,33 +2082,50 @@ export default function DashboardPosyanduPage() {
             ) : (
               <div className="space-y-4">
                 {/* Video Player Box */}
-                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-lg flex flex-col items-center justify-center">
-                  <video
-                    className="absolute inset-0 h-full w-full object-cover"
-                    src="https://assets.mixkit.co/videos/preview/mixkit-doctor-explaining-something-on-a-digital-tablet-41225-large.mp4"
-                    controls
-                    autoPlay
-                    muted
-                    loop
-                  />
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-lg flex flex-col items-center justify-center p-6 text-center text-white">
+                  {videoStatus === 'COMPLETED' && videoUrl ? (
+                    <video
+                      className="absolute inset-0 h-full w-full object-cover"
+                      src={videoUrl}
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                    />
+                  ) : videoStatus === 'FAILED' ? (
+                    <div className="space-y-2 max-w-md mx-auto">
+                      <AlertTriangle className="h-12 w-12 text-rose-500 mx-auto animate-pulse" />
+                      <h4 className="font-bold text-lg">Gagal Membuat Video Presenter</h4>
+                      <p className="text-xs text-slate-400">
+                        Terjadi kendala pada server pembuatan avatar video virtual. Silakan baca laporan teks naskah atau analisis penuh di tab sebelah.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-w-sm mx-auto">
+                      <Loader2 className="h-12 w-12 text-teal-500 animate-spin mx-auto" />
+                      <h4 className="font-bold text-base animate-pulse text-teal-400">Membuat Video Presenter AI...</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Naskah analisis sedang disintesis menjadi presenter AI virtual yang membacakan laporan (~1-2 menit). Halaman akan memuat video secara otomatis saat siap.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                
                 {/* Audio Waveform/Visualizer & Subtitles Explaining the AI analysis */}
                 <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 shadow-sm">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="flex items-center gap-0.5">
-                      <span className="h-3 w-1 bg-indigo-500 rounded-full animate-[bounce_1.2s_infinite_100ms]" />
-                      <span className="h-5 w-1 bg-indigo-650 rounded-full animate-[bounce_1.2s_infinite_200ms]" />
-                      <span className="h-4 w-1 bg-indigo-500 rounded-full animate-[bounce_1.2s_infinite_300ms]" />
-                      <span className="h-2 w-1 bg-indigo-400 rounded-full animate-[bounce_1.2s_infinite_400ms]" />
+                      <span className={`h-3 w-1 bg-indigo-500 rounded-full ${videoStatus === 'COMPLETED' ? 'animate-[bounce_1.2s_infinite_100ms]' : ''}`} />
+                      <span className={`h-5 w-1 bg-indigo-650 rounded-full ${videoStatus === 'COMPLETED' ? 'animate-[bounce_1.2s_infinite_200ms]' : ''}`} />
+                      <span className={`h-4 w-1 bg-indigo-500 rounded-full ${videoStatus === 'COMPLETED' ? 'animate-[bounce_1.2s_infinite_300ms]' : ''}`} />
+                      <span className={`h-2 w-1 bg-indigo-400 rounded-full ${videoStatus === 'COMPLETED' ? 'animate-[bounce_1.2s_infinite_400ms]' : ''}`} />
                     </div>
                     <span className="text-[10px] font-black text-indigo-700 uppercase tracking-widest">
-                      AI Virtual Speaker Subtitle Track
+                      Naskah Presenter AI (Virtual Speaker Script)
                     </span>
                   </div>
                   <p className="text-sm font-semibold text-slate-700 italic leading-relaxed">
-                    "{aiInsight || 'Membacakan ringkasan analisis untuk wilayah terpilih...'}"
+                    "{videoScript || 'Membacakan ringkasan analisis untuk wilayah terpilih...'}"
                   </p>
                 </div>
               </div>
