@@ -75,13 +75,13 @@ const COLORS = ['#14b8a6', '#f59e0b', '#ef4444', '#6366f1', '#a855f7']
 const CustomPosyanduTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload
-    
-    const activeStatusColor = data.statusAktif === 'MEMENUHI' 
-      ? 'text-emerald-600' 
+
+    const activeStatusColor = data.statusAktif === 'MEMENUHI'
+      ? 'text-emerald-600'
       : 'text-red-600'
-      
-    const lifecycleStatusColor = data.statusSiklusHidup === 'MEMENUHI' 
-      ? 'text-emerald-600' 
+
+    const lifecycleStatusColor = data.statusSiklusHidup === 'MEMENUHI'
+      ? 'text-emerald-600'
       : 'text-red-600'
 
     return (
@@ -217,7 +217,7 @@ export default function DashboardPosyanduPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'text' | 'video' | 'info'>('text')
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
-  
+
   // Variabel state baru untuk fitur Riwayat AI & Video Presenter
   const [historyList, setHistoryList] = useState<{ id: string; createdAt: string }[]>([])
   const [selectedHistoryId, setSelectedHistoryId] = useState<string>('')
@@ -532,7 +532,7 @@ export default function DashboardPosyanduPage() {
       }
     } catch (err) {
       console.error('Error generating AI insight:', err)
-      
+
       // Fallback lokal jika terjadi error jaringan / server
       const totalValid = data.totalValid
       const totalAktif = data.totalAktif
@@ -849,11 +849,10 @@ export default function DashboardPosyanduPage() {
             onClick={handleResetFilter}
             disabled={!showResetButton}
             title="Reset Filter"
-            className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black shadow-sm transition-all outline-none h-12 uppercase tracking-wider ${
-              showResetButton
-                ? 'border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100 hover:-translate-y-0.5 active:scale-95'
-                : 'border-slate-200 bg-slate-50/50 text-slate-450 cursor-not-allowed'
-            }`}
+            className={`flex w-full items-center justify-center gap-2 rounded-2xl border px-4 text-sm font-black shadow-sm transition-all outline-none h-12 uppercase tracking-wider ${showResetButton
+              ? 'border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100 hover:-translate-y-0.5 active:scale-95'
+              : 'border-slate-200 bg-slate-50/50 text-slate-450 cursor-not-allowed'
+              }`}
           >
             <RefreshCw className="h-4 w-4 shrink-0" />
             <span>RESET FILTER</span>
@@ -1196,109 +1195,80 @@ export default function DashboardPosyanduPage() {
       <section className="w-full bg-[#fbffff] pb-5">
         <div className="grid w-full grid-cols-1 gap-4 xl:grid-cols-[381px_minmax(0,1fr)] xl:items-stretch">
 
-            {/* ── AI Insight Card ── */}
-            <article
-              className="relative overflow-hidden border border-[#b7d9d8] p-5 xl:h-auto xl:w-[381px] flex flex-col flex-1"
-              style={{
-                backgroundImage: "url('/bg insght.png')",
-                backgroundSize: 'cover',
-                backgroundPosition: 'center bottom',
-                backgroundRepeat: 'no-repeat',
-                borderTopLeftRadius: '17px',
-                borderTopRightRadius: '17px',
-                borderBottomRightRadius: '22px',
-                borderBottomLeftRadius: '17px',
-              }}
-            >
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(237,251,250,0.72)_0%,rgba(231,247,246,0.60)_100%)]" />
+          {/* ── AI Insight Card ── */}
+          <article
+            className="relative overflow-hidden border border-[#b7d9d8] p-5 xl:h-auto xl:w-[381px] flex flex-col flex-1"
+            style={{
+              backgroundImage: "url('/bg insght.png')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center bottom',
+              backgroundRepeat: 'no-repeat',
+              borderTopLeftRadius: '17px',
+              borderTopRightRadius: '17px',
+              borderBottomRightRadius: '22px',
+              borderBottomLeftRadius: '17px',
+            }}
+          >
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(237,251,250,0.72)_0%,rgba(231,247,246,0.60)_100%)]" />
 
-              <div className="relative z-10 flex h-full flex-col">
-                {/* Icon + Title */}
-                <div className="flex items-start gap-3">
-                  <Image
-                    src="/insight.svg"
-                    alt="Insight"
-                    width={52}
-                    height={52}
-                    className="h-13 w-13 flex-shrink-0"
-                  />
-                  <h3 className="text-[15px] font-bold leading-[1.3] text-[#1a3535] sm:text-[17px]">
-                    Analisis Penilaian Kepatuhan & Keaktifan Layanan Posyandu
-                  </h3>
-                </div>
-
-                {/* Video Embed Container */}
-                <div className="mt-3 relative aspect-video w-full overflow-hidden rounded-xl border border-teal-200/60 bg-black/5 shadow-inner group/video shrink-0">
-                  {videoStatus === 'COMPLETED' && videoUrl ? (
-                    isYouTubeUrl(videoUrl) ? (
-                      <iframe
-                        src={getYouTubeEmbedUrl(videoUrl)}
-                        className="h-full w-full border-0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <video
-                        src={videoUrl}
-                        controls
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className="h-full w-full object-cover"
-                      />
-                    )
-                  ) : videoStatus === 'GENERATING' || generatingAi ? (
-                    <div className="flex h-full w-full flex-col items-center justify-center bg-indigo-50/50 p-4 text-center">
-                      <div className="flex items-center gap-1 mb-2">
-                        <span className="h-3 w-1 bg-indigo-500 rounded-full animate-[bounce_1.2s_infinite_100ms]" />
-                        <span className="h-5 w-1 bg-indigo-650 rounded-full animate-[bounce_1.2s_infinite_200ms]" />
-                        <span className="h-4 w-1 bg-indigo-500 rounded-full animate-[bounce_1.2s_infinite_300ms]" />
-                        <span className="h-2 w-1 bg-indigo-400 rounded-full animate-[bounce_1.2s_infinite_400ms]" />
-                      </div>
-                      <p className="text-[11px] font-black text-indigo-700 uppercase tracking-wider">Menyiapkan Presenter AI...</p>
-                      <p className="text-[9px] font-semibold text-slate-500 mt-0.5">Sedang merender avatar video pembaca laporan</p>
-                    </div>
-                  ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center bg-slate-100/50 text-slate-400">
-                      <Video className="h-8 w-8 stroke-[1.5]" />
-                      <span className="mt-1 text-xs font-semibold">Video presenter belum siap</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Body text */}
-                <div className="mt-3 rounded-xl border-l-[3px] border-l-[#16b7b2] bg-white/60 px-3 py-2.5 backdrop-blur-[2px] overflow-y-auto flex-1 min-h-[140px]">
-                  <p className="text-[13px] leading-relaxed text-[#2f4040] sm:text-[14px] whitespace-pre-line text-slate-800">
-                    {aiInsight || 'Klik tombol di bawah untuk membuat analisis.'}
-                  </p>
-                </div>
-
-                {/* Divider */}
-                <div className="my-4 h-px bg-[rgba(0,0,0,0.08)]" />
-
-                <div className="mt-auto shrink-0">
-                  <button
-                    onClick={() => {
-                      if (!aiInsight) {
-                        generateAiInsight()
-                      } else {
-                        setIsModalOpen(true)
-                      }
-                    }}
-                    disabled={generatingAi}
-                    className="group flex w-full items-center justify-center gap-3 rounded-[14px] bg-[#047D78] hover:bg-[#03605c] px-4 py-3.5 text-white shadow-[0_4px_14px_rgba(4,125,120,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(4,125,120,0.42)] active:scale-[0.99] disabled:cursor-wait"
-                  >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
-                      {generatingAi ? <Loader2 className="h-4 w-4 animate-spin text-[#047D78]" /> : <Sparkles className="h-4 w-4 text-[#047D78]" />}
-                    </span>
-                    <span className="text-xs font-bold uppercase tracking-[0.1em]">
-                      {generatingAi ? 'Sedang Menganalisis...' : 'Lihat Analisis Lengkap'}
-                    </span>
-                  </button>
-                </div>
+            <div className="relative z-10 flex h-full flex-col">
+              {/* Icon + Title */}
+              <div className="flex items-start gap-3">
+                <Image
+                  src="/insight.svg"
+                  alt="Insight"
+                  width={52}
+                  height={52}
+                  className="h-13 w-13 flex-shrink-0"
+                />
+                <h3 className="text-[15px] font-bold leading-[1.3] text-[#1a3535] sm:text-[17px]">
+                  Analisis Penilaian Kepatuhan & Keaktifan Layanan Posyandu
+                </h3>
               </div>
-            </article>
+
+              {/* Video Embed Container */}
+              <div className="mt-3 relative aspect-video w-full overflow-hidden rounded-xl border border-teal-200/60 bg-black/5 shadow-inner group/video shrink-0">
+                <iframe
+                  src="https://app.heygen.com/embeds/07445718ccb54423a319f7df5d830a0f"
+                  title="Check out a new AI Video I just made!"
+                  className="absolute inset-0 h-full w-full border-0"
+                  allow="encrypted-media; fullscreen"
+                  allowFullScreen
+                />
+              </div>
+
+              {/* Body text */}
+              <div className="mt-3 rounded-xl border-l-[3px] border-l-[#16b7b2] bg-white/60 px-3 py-2.5 backdrop-blur-[2px] overflow-y-auto flex-1 min-h-[140px]">
+                <p className="text-[13px] leading-relaxed text-[#2f4040] sm:text-[14px] whitespace-pre-line text-slate-800">
+                  {aiInsight || 'Klik tombol di bawah untuk membuat analisis.'}
+                </p>
+              </div>
+
+              {/* Divider */}
+              <div className="my-4 h-px bg-[rgba(0,0,0,0.08)]" />
+
+              <div className="mt-auto shrink-0">
+                <button
+                  onClick={() => {
+                    if (!aiInsight) {
+                      generateAiInsight()
+                    } else {
+                      setIsModalOpen(true)
+                    }
+                  }}
+                  disabled={generatingAi}
+                  className="group flex w-full items-center justify-center gap-3 rounded-[14px] bg-[#047D78] hover:bg-[#03605c] px-4 py-3.5 text-white shadow-[0_4px_14px_rgba(4,125,120,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(4,125,120,0.42)] active:scale-[0.99] disabled:cursor-wait"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
+                    {generatingAi ? <Loader2 className="h-4 w-4 animate-spin text-[#047D78]" /> : <Sparkles className="h-4 w-4 text-[#047D78]" />}
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-[0.1em]">
+                    {generatingAi ? 'Sedang Menganalisis...' : 'Lihat Analisis Lengkap'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          </article>
 
           {/* Map Card */}
           <article
@@ -1368,7 +1338,7 @@ export default function DashboardPosyanduPage() {
                     <LineChart data={data?.yearlyTrend} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="tahun" axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 13, fontWeight: 700 }} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 13, fontWeight: 700 }} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 13, fontWeight: 700 }} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
                       <Tooltip
                         contentStyle={{
                           background: 'rgba(255, 255, 255, 0.97)',
@@ -1460,7 +1430,7 @@ export default function DashboardPosyanduPage() {
 
       {/* ── Lower Analytics Row (Stacked Wilayah & Funnel) ── */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full bg-[#fbffff] pb-5">
-        
+
         {/* Horizontal Stacked Bar Chart per Wilayah - screenshot 2 matching */}
         <article
           className="border border-[#cdcdcd] bg-white p-6 shadow-[0_10px_30px_rgba(15,118,110,0.04)] flex flex-col"
@@ -1488,7 +1458,7 @@ export default function DashboardPosyanduPage() {
               <ResponsiveContainer width="100%" height={380}>
                 <BarChart data={regionalStackedData} layout="vertical" margin={{ top: 0, right: 30, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 12, fontWeight: 700 }} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 12, fontWeight: 700 }} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
                   <YAxis type="category" dataKey="name" width={100} axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontSize: 12, fontWeight: 800 }} />
                   <Tooltip
                     formatter={(value) => [`${Number(value).toLocaleString('id-ID')} Posyandu`]}
@@ -1536,7 +1506,7 @@ export default function DashboardPosyanduPage() {
               <ResponsiveContainer width="100%" height={380}>
                 <BarChart data={data?.funnelData} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 12, fontWeight: 700 }} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : v} />
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 12, fontWeight: 700 }} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
                   <YAxis type="category" dataKey="stage" width={110} axisLine={false} tickLine={false} tick={{ fill: '#1e293b', fontSize: 12, fontWeight: 800 }} />
                   <Tooltip
                     formatter={(value, name, props) => [`${Number(value).toLocaleString('id-ID')} Posyandu (${props.payload.percentage}%)`]}
@@ -1662,12 +1632,12 @@ export default function DashboardPosyanduPage() {
                     </tr>
                   ) : (
                     filteredMatrixData.map((wil, idx) => {
-                      const activeBadgeColor = wil.statusAktif === 'MEMENUHI' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-150' 
+                      const activeBadgeColor = wil.statusAktif === 'MEMENUHI'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-150'
                         : 'bg-red-50 text-red-700 border-red-150'
-                      
-                      const lifecycleBadgeColor = wil.statusSiklusHidup === 'MEMENUHI' 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-150' 
+
+                      const lifecycleBadgeColor = wil.statusSiklusHidup === 'MEMENUHI'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-150'
                         : 'bg-red-50 text-red-700 border-red-150'
 
                       return (
@@ -1768,7 +1738,7 @@ export default function DashboardPosyanduPage() {
                             paddingBottom: '20px',
                           }}
                         />
-                        
+
                         <ReferenceLine
                           y={80}
                           stroke="#ef4444"
@@ -1886,7 +1856,7 @@ export default function DashboardPosyanduPage() {
                   <tbody className="divide-y divide-slate-100 font-semibold text-slate-705">
                     {data?.markers.map((item, idx) => {
                       const isSiklus = item.status_evaluasi === 'Baik'
-                      
+
                       return (
                         <tr key={idx} className="hover:bg-slate-100/70 transition-colors odd:bg-slate-50">
                           <td className="py-3 px-3 font-bold text-slate-800 uppercase tracking-wide">
@@ -1901,9 +1871,8 @@ export default function DashboardPosyanduPage() {
                             </span>
                           </td>
                           <td className="py-3 px-3 text-center">
-                            <span className={`inline-flex items-center rounded-lg border px-3 py-1 text-xs font-black uppercase tracking-wider ${
-                              item.is_ranap ? 'bg-teal-50 text-teal-700 border-teal-150' : 'bg-slate-50 text-slate-450 border-slate-200'
-                            }`}>
+                            <span className={`inline-flex items-center rounded-lg border px-3 py-1 text-xs font-black uppercase tracking-wider ${item.is_ranap ? 'bg-teal-50 text-teal-700 border-teal-150' : 'bg-slate-50 text-slate-450 border-slate-200'
+                              }`}>
                               {item.is_ranap ? 'Aktif' : 'Tidak Aktif'}
                             </span>
                           </td>
@@ -1914,9 +1883,8 @@ export default function DashboardPosyanduPage() {
                             {item.obat_pct}%
                           </td>
                           <td className="py-3 px-3 text-center">
-                            <span className={`inline-flex items-center rounded-lg border px-3 py-1 text-xs font-black uppercase tracking-wider ${
-                              isSiklus ? 'bg-emerald-50 text-emerald-700 border-emerald-150' : 'bg-red-50 text-red-700 border-red-150'
-                            }`}>
+                            <span className={`inline-flex items-center rounded-lg border px-3 py-1 text-xs font-black uppercase tracking-wider ${isSiklus ? 'bg-emerald-50 text-emerald-700 border-emerald-150' : 'bg-red-50 text-red-700 border-red-150'
+                              }`}>
                               {isSiklus ? 'Lengkap' : 'Belum Lengkap'}
                             </span>
                           </td>
@@ -1982,11 +1950,10 @@ export default function DashboardPosyanduPage() {
           <button
             type="button"
             onClick={() => setActiveTab('text')}
-            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${
-              activeTab === 'text'
-                ? 'border-teal-650 text-teal-600'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
+            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${activeTab === 'text'
+              ? 'border-teal-650 text-teal-600'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
           >
             <FileText className="h-4 w-4" />
             Laporan Analisis
@@ -1994,11 +1961,10 @@ export default function DashboardPosyanduPage() {
           <button
             type="button"
             onClick={() => setActiveTab('video')}
-            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${
-              activeTab === 'video'
-                ? 'border-teal-650 text-teal-600'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
+            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${activeTab === 'video'
+              ? 'border-teal-650 text-teal-600'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
           >
             <Video className="h-4 w-4" />
             AI Video Presenter
@@ -2006,11 +1972,10 @@ export default function DashboardPosyanduPage() {
           <button
             type="button"
             onClick={() => setActiveTab('info')}
-            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${
-              activeTab === 'info'
-                ? 'border-teal-650 text-teal-600'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-            }`}
+            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${activeTab === 'info'
+              ? 'border-teal-650 text-teal-600'
+              : 'border-transparent text-slate-400 hover:text-slate-600'
+              }`}
           >
             <Info className="h-4 w-4" />
             Informasi Sumber Data & AI
@@ -2031,33 +1996,14 @@ export default function DashboardPosyanduPage() {
             ) : activeTab === 'video' ? (
               <div className="space-y-4">
                 {/* Video Player Box */}
-                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-lg flex flex-col items-center justify-center p-6 text-center text-white">
-                  {videoStatus === 'COMPLETED' && videoUrl ? (
-                    <video
-                      className="absolute inset-0 h-full w-full object-cover"
-                      src={videoUrl}
-                      controls
-                      autoPlay
-                      muted
-                      loop
-                    />
-                  ) : videoStatus === 'FAILED' ? (
-                    <div className="space-y-2 max-w-md mx-auto">
-                      <AlertTriangle className="h-12 w-12 text-rose-500 mx-auto animate-pulse" />
-                      <h4 className="font-bold text-lg">Gagal Membuat Video Presenter</h4>
-                      <p className="text-xs text-slate-400">
-                        Terjadi kendala pada server pembuatan avatar video virtual. Silakan baca laporan teks naskah atau analisis penuh di tab sebelah.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-w-sm mx-auto">
-                      <Loader2 className="h-12 w-12 text-teal-500 animate-spin mx-auto" />
-                      <h4 className="font-bold text-base animate-pulse text-teal-400">Membuat Video Presenter AI...</h4>
-                      <p className="text-xs text-slate-400 leading-relaxed">
-                        Naskah analisis sedang disintesis menjadi presenter AI virtual yang membacakan laporan (~1-2 menit). Halaman akan memuat video secara otomatis saat siap.
-                      </p>
-                    </div>
-                  )}
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-lg">
+                  <iframe
+                    src="https://app.heygen.com/embeds/07445718ccb54423a319f7df5d830a0f"
+                    title="Check out a new AI Video I just made!"
+                    className="absolute inset-0 h-full w-full border-0"
+                    allow="encrypted-media; fullscreen"
+                    allowFullScreen
+                  />
                 </div>
 
                 {/* Audio Waveform/Visualizer & Subtitles Explaining the AI analysis */}
@@ -2107,13 +2053,12 @@ export default function DashboardPosyanduPage() {
                   }
 
                   return (
-                    <div className={`p-5 rounded-2xl border flex gap-3.5 items-start shadow-sm leading-relaxed ${
-                      severity === 'critical'
-                        ? 'bg-rose-50 border-rose-100 text-rose-800'
-                        : severity === 'warning'
+                    <div className={`p-5 rounded-2xl border flex gap-3.5 items-start shadow-sm leading-relaxed ${severity === 'critical'
+                      ? 'bg-rose-50 border-rose-100 text-rose-800'
+                      : severity === 'warning'
                         ? 'bg-amber-50 border-amber-100 text-amber-800'
                         : 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                    }`}>
+                      }`}>
                       {severity === 'critical' ? (
                         <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5 animate-pulse" />
                       ) : severity === 'warning' ? (
@@ -2123,18 +2068,18 @@ export default function DashboardPosyanduPage() {
                       )}
                       <div>
                         <h5 className="font-extrabold text-sm mb-1 uppercase tracking-wide">
-                          {severity === 'critical' 
-                            ? 'Rekomendasi Utama: Perlu Perhatian Khusus (Kritis)' 
+                          {severity === 'critical'
+                            ? 'Rekomendasi Utama: Perlu Perhatian Khusus (Kritis)'
                             : severity === 'warning'
-                            ? 'Rekomendasi Utama: Status Siaga / Perlu Antisipasi'
-                            : 'Rekomendasi Utama: Kondisi Baik & Stabil'}
+                              ? 'Rekomendasi Utama: Status Siaga / Perlu Antisipasi'
+                              : 'Rekomendasi Utama: Kondisi Baik & Stabil'}
                         </h5>
                         <p className="text-xs font-semibold">
                           {severity === 'critical'
                             ? `Wilayah ini berada dalam kondisi KRITIS dan memerlukan intervensi darurat segera karena: ${warnings.join(', serta ')}.`
                             : severity === 'warning'
-                            ? `Wilayah ini berada dalam status SIAGA (perlu perhatian sedang) karena: ${warnings.join(', serta ')}.`
-                            : `Kinerja Posyandu di wilayah ini dalam kondisi prima. Seluruh indikator utama (keaktifan bulanan, siklus hidup, dan pencapaian target kepatuhan) telah memenuhi target standar nasional.`}
+                              ? `Wilayah ini berada dalam status SIAGA (perlu perhatian sedang) karena: ${warnings.join(', serta ')}.`
+                              : `Kinerja Posyandu di wilayah ini dalam kondisi prima. Seluruh indikator utama (keaktifan bulanan, siklus hidup, dan pencapaian target kepatuhan) telah memenuhi target standar nasional.`}
                         </p>
                       </div>
                     </div>
@@ -2162,12 +2107,12 @@ export default function DashboardPosyanduPage() {
               </div>
             )}
           </div>
-          
+
           {/* Key metadata & highlights section (right) */}
           <div className="w-full lg:w-[320px] shrink-0 space-y-4">
             <div className="rounded-xl border border-teal-100 bg-teal-50/40 p-5">
               <h4 className="text-sm font-black uppercase text-teal-800 tracking-wider mb-3">Ringkasan Wilayah</h4>
-              
+
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between border-b border-teal-50 pb-2">
                   <span className="text-slate-500 font-bold">Total Valid:</span>
@@ -2203,10 +2148,10 @@ export default function DashboardPosyanduPage() {
                 <h4 className="text-sm font-black uppercase text-slate-800 tracking-wider mb-3">Rekomendasi</h4>
                 <ul className="space-y-3">
                   {aiRecommendations.map((rec, i) => (
-                    <li 
-                      key={i} 
-                      className="text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-2.5 border-l-2 border-l-[#4d90d0]" 
-                      dangerouslySetInnerHTML={{ __html: rec }} 
+                    <li
+                      key={i}
+                      className="text-xs text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-2.5 border-l-2 border-l-[#4d90d0]"
+                      dangerouslySetInnerHTML={{ __html: rec }}
                     />
                   ))}
                 </ul>

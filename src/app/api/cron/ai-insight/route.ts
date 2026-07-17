@@ -46,12 +46,171 @@ ${summary}
   return `Halo Bapak Ibu sekalian. Berikut adalah ringkasan analisis Posyandu secara nasional. ${summary.replace(/[#*_\-`]/g, '')} Terima kasih atas perhatian Anda, mari kita tingkatkan kualitas pelayanan Posyandu bersama-sama.`
 }
 
-// Helper untuk mentrigger pembuatan video avatar menggunakan API HeyGen atau simulasi demo
-async function triggerVideoGeneration(insightId: string, scriptText: string) {
-  const apiKey = process.env.HEYGEN_API_KEY
+// Helper untuk membuat gambar composite presenter (studio + panel info + presenter)
+async function generateCompositePresenterImage(
+  regionLabel: string,
+  year: string,
+  totalValid: number,
+  totalAktif: number,
+  pctAktif: number,
+  totalSiklusHidup: number,
+  pctSiklusHidup: number,
+  totalKunjunganRumah: number,
+  totalLaporPustu: number
+): Promise<Buffer> {
+  const path = require('path')
+  const fs = require('fs')
+  const sharp = require('sharp')
 
-  if (!apiKey || apiKey === 'MASUKKAN_API_KEY_HEYGEN_ANDA_DI_SINI' || apiKey.trim() === '') {
-    console.log('[VIDEO] [CRON] No HEYGEN_API_KEY found. Simulating video generation in Demo Mode.')
+  const bgPath = path.join(process.cwd(), 'public/presenters/studio_bg.png')
+  const presenterPath = path.join(process.cwd(), 'public/presenters/presenter.png')
+
+  // Pastikan template asset ada
+  if (!fs.existsSync(bgPath) || !fs.existsSync(presenterPath)) {
+    throw new Error('Template assets (studio_bg.png or presenter.png) do not exist in public/presenters')
+  }
+
+  // 1. Resize background ke 1920x1080
+  const bgBuffer = await sharp(bgPath)
+    .resize({ width: 1920, height: 1080, fit: 'cover' })
+    .toBuffer()
+
+  // 2. Hilangkan background putih presenter & scale ke tinggi 850
+  const presenterImg = sharp(presenterPath)
+  const { data, info } = await presenterImg
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const outBuffer = Buffer.alloc(info.width * info.height * 4)
+  for (let i = 0; i < info.width * info.height; i++) {
+    let r, g, b, a
+    if (info.channels === 3) {
+      r = data[i * 3]
+      g = data[i * 3 + 1]
+      b = data[i * 3 + 2]
+      a = 255
+    } else {
+      r = data[i * 4]
+      g = data[i * 4 + 1]
+      b = data[i * 4 + 2]
+      a = data[i * 4 + 3]
+    }
+
+    if (r > 240 && g > 240 && b > 240) {
+      a = 0 // Transparent
+    }
+
+    outBuffer[i * 4] = r
+    outBuffer[i * 4 + 1] = g
+    outBuffer[i * 4 + 2] = b
+    outBuffer[i * 4 + 3] = a
+  }
+
+  const transparentPresenterBuffer = await sharp(outBuffer, {
+    raw: {
+      width: info.width,
+      height: info.height,
+      channels: 4
+    }
+  })
+  .resize({ height: 850 })
+  .png()
+  .toBuffer()
+
+  // 3. Buat SVG overlay dengan data dashboard riil
+  const activeTargetStatus = pctAktif >= 80 ? 'TERCAPAI' : 'BELUM TERCAPAI'
+  const lifecycleTargetStatus = pctSiklusHidup >= 75 ? 'TERCAPAI' : 'BELUM TERCAPAI'
+  const activeColor = pctAktif >= 80 ? '#00f5d4' : '#ff5a5f'
+  const lifecycleColor = pctSiklusHidup >= 75 ? '#00f5d4' : '#ff5a5f'
+
+  const svgOverlay = `
+    <svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="panelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#020a17" stop-opacity="0.85"/>
+          <stop offset="100%" stop-color="#0a1931" stop-opacity="0.85"/>
+        </linearGradient>
+        <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#00b4d8"/>
+          <stop offset="100%" stop-color="#0077b6"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Left Sidebar Panel for metrics -->
+      <rect x="60" y="60" width="550" height="820" rx="24" fill="url(#panelGrad)" stroke="#00b4d8" stroke-width="3" />
+
+      <!-- Lower Third Broadcast Bar (Ticker) -->
+      <rect x="60" y="910" width="1800" height="110" rx="16" fill="#020a17" opacity="0.95" stroke="#00b4d8" stroke-width="2" />
+      <rect x="60" y="910" width="280" height="110" rx="16" fill="url(#accentGrad)" />
+
+      <text x="200" y="975" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#ffffff" text-anchor="middle">INFO UTAMA</text>
+      <text x="380" y="975" font-family="Arial, sans-serif" font-size="26" fill="#00b4d8" font-weight="bold">PEMBAHARUAN DATA POSYANDU ${regionLabel.toUpperCase()} - TAHUN ${year}</text>
+
+      <!-- Title / Location -->
+      <text x="100" y="130" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#ffffff">LAPORAN KINERJA AI</text>
+      <text x="100" y="175" font-family="Arial, sans-serif" font-size="20" fill="#00b4d8" font-weight="bold">${regionLabel.toUpperCase()} - TAHUN ${year}</text>
+      <line x1="100" y1="205" x2="570" y2="205" stroke="#00b4d8" stroke-width="2" opacity="0.5" />
+
+      <!-- Metric 1: Keaktifan -->
+      <text x="100" y="255" font-family="Arial, sans-serif" font-size="18" fill="#a0c4ff" font-weight="bold">KEAKTIFAN OPERASIONAL</text>
+      <text x="100" y="315" font-family="Arial, sans-serif" font-size="48" fill="#ffffff" font-weight="bold">${pctAktif}%</text>
+      <text x="220" y="305" font-family="Arial, sans-serif" font-size="14" fill="${activeColor}" font-weight="bold">TARGET: 80% (${activeTargetStatus})</text>
+
+      <!-- Metric 2: Siklus Hidup -->
+      <text x="100" y="395" font-family="Arial, sans-serif" font-size="18" fill="#a0c4ff" font-weight="bold">SIKLUS HIDUP AKTIF</text>
+      <text x="100" y="455" font-family="Arial, sans-serif" font-size="48" fill="#ffffff" font-weight="bold">${pctSiklusHidup}%</text>
+      <text x="220" y="445" font-family="Arial, sans-serif" font-size="14" fill="${lifecycleColor}" font-weight="bold">TARGET: 75% (${lifecycleTargetStatus})</text>
+
+      <!-- Metric 3: Kunjungan Rumah -->
+      <text x="100" y="535" font-family="Arial, sans-serif" font-size="18" fill="#a0c4ff" font-weight="bold">KUNJUNGAN RUMAH</text>
+      <text x="100" y="590" font-family="Arial, sans-serif" font-size="40" fill="#ffffff" font-weight="bold">${totalKunjunganRumah.toLocaleString('id-ID')}</text>
+      <text x="100" y="620" font-family="Arial, sans-serif" font-size="13" fill="#90e0ef">Kunjungan langsung oleh kader</text>
+
+      <!-- Metric 4: Melapor Pustu -->
+      <text x="100" y="695" font-family="Arial, sans-serif" font-size="18" fill="#a0c4ff" font-weight="bold">MELAPOR KE PUSTU</text>
+      <text x="100" y="750" font-family="Arial, sans-serif" font-size="40" fill="#ffffff" font-weight="bold">${totalLaporPustu.toLocaleString('id-ID')}</text>
+      <text x="100" y="780" font-family="Arial, sans-serif" font-size="13" fill="#90e0ef">Laporan terintegrasi Pustu</text>
+    </svg>
+  `
+
+  // 4. Gabungkan semuanya
+  return await sharp(bgBuffer)
+    .composite([
+      {
+        input: transparentPresenterBuffer,
+        top: 180,
+        left: 1050
+      },
+      {
+        input: Buffer.from(svgOverlay),
+        top: 0,
+        left: 0
+      }
+    ])
+    .png()
+    .toBuffer()
+}
+
+// Helper untuk mentrigger pembuatan video avatar menggunakan API D-ID atau simulasi demo
+async function triggerVideoGeneration(
+  insightId: string,
+  scriptText: string,
+  meta?: {
+    regionLabel: string
+    year: string
+    totalValid: number
+    totalAktif: number
+    pctAktif: number
+    totalSiklusHidup: number
+    pctSiklusHidup: number
+    totalKunjunganRumah: number
+    totalLaporPustu: number
+  }
+) {
+  const apiKey = process.env.DID_API_KEY
+
+  if (!apiKey || apiKey === 'MASUKKAN_API_KEY_D_ID_ANDA_DI_SINI' || apiKey.trim() === '') {
+    console.log('[VIDEO] [CRON] No DID_API_KEY found. Simulating video generation in Demo Mode.')
     // Simulasikan pembuatan video asinkron (selesai setelah 5 detik)
     setTimeout(async () => {
       try {
@@ -62,7 +221,7 @@ async function triggerVideoGeneration(insightId: string, scriptText: string) {
             videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-doctor-explaining-something-on-a-digital-tablet-41225-large.mp4',
           },
         })
-        console.log('[VIDEO] [CRON] Simulated HeyGen video generation completed for:', insightId)
+        console.log('[VIDEO] [CRON] Simulated D-ID video generation completed for:', insightId)
       } catch (err) {
         console.error('[VIDEO] [CRON] Failed to update simulated video status:', err)
       }
@@ -72,71 +231,99 @@ async function triggerVideoGeneration(insightId: string, scriptText: string) {
   }
 
   try {
-    const avatarId = process.env.HEYGEN_AVATAR_ID || 'Wayland_front_suit_20240801'
-    const voiceId = process.env.HEYGEN_VOICE_ID || 'id-ID-ArdiNeural'
-    const backgroundUrl = process.env.HEYGEN_BACKGROUND_URL || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920'
+    let sourceUrl = ''
 
-    console.log('[VIDEO] [CRON] Triggering HeyGen video generation:', { avatarId, voiceId, backgroundUrl })
+    // 1. Jika data meta lengkap, generate presenter image composite secara dinamis & upload ke D-ID
+    if (meta) {
+      console.log('[VIDEO] [CRON] Generating dynamic composite image with dashboard metrics...')
+      const compositeBuffer = await generateCompositePresenterImage(
+        meta.regionLabel,
+        meta.year,
+        meta.totalValid,
+        meta.totalAktif,
+        meta.pctAktif,
+        meta.totalSiklusHidup,
+        meta.pctSiklusHidup,
+        meta.totalKunjunganRumah,
+        meta.totalLaporPustu
+      )
 
-    const response = await fetch('https://api.heygen.com/v2/video/generate', {
+      console.log('[VIDEO] [CRON] Uploading composite image to D-ID temporary storage...')
+      const formData = new FormData()
+      const fileBlob = new Blob([new Uint8Array(compositeBuffer)], { type: 'image/png' })
+      formData.append('image', fileBlob, 'presenter.png')
+
+      const uploadResponse = await fetch('https://api.d-id.com/images', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(apiKey + ':').toString('base64')}`
+        },
+        body: formData
+      })
+
+      if (!uploadResponse.ok) {
+        const uploadErr = await uploadResponse.text()
+        throw new Error(`Failed to upload composite image to D-ID in CRON: ${uploadResponse.status} - ${uploadErr}`)
+      }
+
+      const uploadData = await uploadResponse.json()
+      sourceUrl = uploadData.url // D-ID S3 Url
+      console.log('[VIDEO] [CRON] Composite image uploaded successfully to D-ID:', sourceUrl)
+    } else {
+      // Fallback jika tidak ada data meta
+      let presenterImageUrl = process.env.DID_PRESENTER_IMAGE_URL || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800'
+      if (!presenterImageUrl.match(/\.(jpg|jpeg|png)($|\?)/i)) {
+        presenterImageUrl += presenterImageUrl.includes('?') ? '&ext=.jpg' : '?ext=.jpg'
+      }
+      sourceUrl = presenterImageUrl
+    }
+
+    const voiceId = process.env.DID_VOICE_ID || 'id-ID-ArdiNeural'
+
+    console.log('[VIDEO] [CRON] Triggering D-ID video generation with:', { sourceUrl, voiceId })
+
+    const response = await fetch('https://api.d-id.com/talks', {
       method: 'POST',
       headers: {
-        'X-Api-Key': apiKey,
+        'Authorization': `Basic ${Buffer.from(apiKey + ':').toString('base64')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        video_inputs: [
-          {
-            character: {
-              type: 'avatar',
-              avatar_id: avatarId,
-              avatar_style: 'normal',
-            },
-            voice: {
-              type: 'text',
-              input_text: scriptText,
-              voice_id: voiceId,
-              speed: 1.0,
-            },
-            background: {
-              type: 'image',
-              url: backgroundUrl,
-            },
+        script: {
+          type: 'text',
+          input: scriptText,
+          provider: {
+            type: 'microsoft',
+            voice_id: voiceId,
           },
-        ],
-        dimension: {
-          width: 1920,
-          height: 1080,
         },
-        title: 'Analisis Kinerja Posyandu AI',
-        caption: false,
+        source_url: sourceUrl,
+        config: {
+          fluent: true,
+          pad_audio: 0,
+        },
       }),
     })
 
     if (!response.ok) {
       const errText = await response.text()
-      throw new Error(`HeyGen API response error: ${response.status} - ${errText}`)
+      throw new Error(`D-ID API response error: ${response.status} - ${errText}`)
     }
 
-    const resJson = await response.json()
-    console.log('[VIDEO] [CRON] HeyGen video generation response:', resJson)
-
-    const videoId = resJson.data?.video_id || resJson.video_id
-    if (!videoId) {
-      throw new Error(`Failed to retrieve video_id from HeyGen response: ${JSON.stringify(resJson)}`)
-    }
+    const data = await response.json()
+    console.log('[VIDEO] [CRON] D-ID video generation triggered successfully:', data)
 
     await prisma.aIInsightHistory.update({
       where: { id: insightId },
       data: {
-        videoJobId: videoId,
+        videoJobId: data.id,
         videoStatus: 'GENERATING',
       },
     })
 
-    return { jobId: videoId, status: 'GENERATING' }
+    return { jobId: data.id, status: 'GENERATING' }
   } catch (error) {
-    console.error('[VIDEO] [CRON] Error triggering HeyGen video generation:', error)
+    console.error('[VIDEO] [CRON] Error triggering D-ID video generation:', error)
     await prisma.aIInsightHistory.update({
       where: { id: insightId },
       data: {
@@ -376,7 +563,17 @@ Untuk mendorong akselerasi pencapaian target nasional sebesar **${stats.targetPc
     })
 
     // Trigger video generator secara asinkron
-    triggerVideoGeneration(newRecord.id, videoScript)
+    triggerVideoGeneration(newRecord.id, videoScript, {
+      regionLabel: 'Nasional',
+      year: cacheKey.year,
+      totalValid,
+      totalAktif,
+      pctAktif,
+      totalSiklusHidup,
+      pctSiklusHidup,
+      totalKunjunganRumah: stats.totalKunjunganRumah,
+      totalLaporPustu: stats.totalLaporPustu
+    })
 
     return NextResponse.json({ success: true, message: 'New historical insight generated successfully.', id: newRecord.id })
 
