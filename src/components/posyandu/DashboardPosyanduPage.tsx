@@ -483,6 +483,14 @@ export default function DashboardPosyanduPage() {
   // AI Insight Generator
   const generateAiInsight = async (historyId?: string) => {
     if (!data) return
+    if (
+      province.toLowerCase().includes('memuat') ||
+      kabupaten.toLowerCase().includes('memuat')
+    ) {
+      console.warn('Skipping AI insight generation because region is loading.')
+      return
+    }
+
     setGeneratingAi(true)
 
     // Reset state hanya jika kita membuat analisis baru (bukan memuat lama)
@@ -510,7 +518,7 @@ export default function DashboardPosyanduPage() {
           timeFrame: selectedTimeframe,
           period: selectedPeriod,
           historyId,
-          force: !historyId,
+          force: false, // Default dashboard mount respects cache (only manual bypasses)
         }),
       })
 
@@ -604,9 +612,14 @@ export default function DashboardPosyanduPage() {
   // Pre-generate AI insight once data is loaded
   useEffect(() => {
     if (data) {
+      const provStr = (province || '').toLowerCase()
+      const kabStr = (kabupaten || '').toLowerCase()
+      if (provStr.includes('memuat') || kabStr.includes('memuat')) {
+        return
+      }
       generateAiInsight()
     }
-  }, [data])
+  }, [data, province, kabupaten])
 
 
   if (!isInitialized) {

@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from 'react'
 import {
   Clock,
   Eye,
-  Search,
   Loader2,
   FileText,
   Video,
@@ -83,7 +82,6 @@ export default function LogAiPage() {
   const { token } = useAuthStore()
   const [logs, setLogs] = useState<AiLog[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
   const [selectedLog, setSelectedLog] = useState<AiLog | null>(null)
   const [activeTab, setActiveTab] = useState<'text' | 'video' | 'info'>('text')
   const [sortField, setSortField] = useState<'createdAt' | 'province'>('createdAt')
@@ -113,15 +111,7 @@ export default function LogAiPage() {
   }, [])
 
   const filteredAndSortedLogs = useMemo(() => {
-    return logs
-      .filter((log) => {
-        const query = searchQuery.toLowerCase()
-        return (
-          log.province.toLowerCase().includes(query) ||
-          log.kabupaten.toLowerCase().includes(query) ||
-          log.summary.toLowerCase().includes(query)
-        )
-      })
+    return [...logs]
       .sort((a, b) => {
         let fieldA: any = a[sortField]
         let fieldB: any = b[sortField]
@@ -136,7 +126,7 @@ export default function LogAiPage() {
         if (fieldA > fieldB) return sortAsc ? 1 : -1
         return 0
       })
-  }, [logs, searchQuery, sortField, sortAsc])
+  }, [logs, sortField, sortAsc])
 
   const handleSort = (field: 'createdAt' | 'province') => {
     if (sortField === field) {
@@ -286,19 +276,7 @@ export default function LogAiPage() {
         </div>
       </article>
 
-      {/* Control & Search Bar */}
-      <section className="flex flex-col sm:flex-row gap-4 items-center justify-between w-full">
-        <div className="relative w-full sm:w-[380px]">
-          <Search className="absolute left-4 h-4 w-4 text-slate-400 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari wilayah atau intisari analisis..."
-            className="w-full rounded-2xl border border-slate-200 bg-white h-11 pl-11 pr-4 text-sm font-bold shadow-sm outline-none placeholder:text-slate-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-slate-800"
-          />
-        </div>
-      </section>
+
 
       {/* Main Content Table Card */}
       <article className="border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,118,110,0.03)] rounded-2xl overflow-hidden flex flex-col w-full">

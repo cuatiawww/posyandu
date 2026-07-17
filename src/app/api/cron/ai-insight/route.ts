@@ -517,40 +517,8 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
         recommendations: JSON.stringify(recommendationsArr),
         detailedAnalysis: detailedAnalysisText,
         videoScript,
-        videoStatus: 'PENDING',
+        videoStatus: 'COMPLETED',
       },
-    });
-
-    // Clean up old records for the same region + period, keeping only the latest one
-    try {
-      await prisma.aIInsightHistory.deleteMany({
-        where: {
-          province: cacheKey.province,
-          kabupaten: cacheKey.kabupaten,
-          year: cacheKey.year,
-          timeFrame: cacheKey.timeFrame,
-          period: cacheKey.period,
-          id: {
-            not: newRecord.id
-          }
-        }
-      });
-      console.log(`[CRON DB] Cleaned up older AI insights for ${cacheKey.province} - ${cacheKey.kabupaten}, keeping only: ${newRecord.id}`);
-    } catch (cleanErr) {
-      console.error('[CRON DB ERROR] Failed to clean up old AI insights:', cleanErr);
-    }
-
-    // Trigger video generator secara asinkron
-    triggerVideoGeneration(newRecord.id, videoScript, {
-      regionLabel: 'Nasional',
-      year: cacheKey.year,
-      totalValid,
-      totalAktif,
-      pctAktif,
-      totalSiklusHidup,
-      pctSiklusHidup,
-      totalKunjunganRumah: stats.totalKunjunganRumah,
-      totalLaporPustu: stats.totalLaporPustu
     });
 
     return NextResponse.json({ success: true, message: 'New historical insight generated successfully.', id: newRecord.id });

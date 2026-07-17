@@ -373,6 +373,22 @@ export async function POST(req: NextRequest) {
     const provName = province || 'NASIONAL'
     const kabName = kabupaten || 'SEMUA KAB/KOTA'
 
+    if (
+      provName.toLowerCase().includes('memuat') ||
+      kabName.toLowerCase().includes('memuat')
+    ) {
+      return NextResponse.json({
+        summary: 'Sedang memuat data analisis wilayah...',
+        recommendations: [],
+        detailedAnalysis: '# Memuat Laporan...\n\nData analisis wilayah sedang dipersiapkan.',
+        videoScript: 'Maaf saat ini naskah belum tersedia',
+        videoUrl: null,
+        videoStatus: 'PENDING',
+        historyList: [],
+        cached: true,
+      }, { status: 200 });
+    }
+
     // Ambil daftar riwayat analisis untuk dropdown UI
     const historyList = await prisma.aIInsightHistory.findMany({
       where: {
@@ -651,41 +667,9 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
         recommendations: JSON.stringify(recommendationsArr),
         detailedAnalysis: detailedAnalysisText,
         videoScript,
-        videoStatus: 'PENDING',
+        videoStatus: 'COMPLETED',
       },
     });
-
-    // Clean up old records for the same region + period, keeping only the latest one
-    try {
-      await prisma.aIInsightHistory.deleteMany({
-        where: {
-          province: provName,
-          kabupaten: kabName,
-          year,
-          timeFrame,
-          period,
-          id: {
-            not: newRecord.id
-          }
-        }
-      });
-      console.log(`[DB] Cleaned up older AI insights for ${provName} - ${kabName}, keeping only: ${newRecord.id}`);
-    } catch (cleanErr) {
-      console.error('[DB ERROR] Failed to clean up old AI insights:', cleanErr);
-    }
-
-    // 8. Trigger D-ID Video Generation secara asinkron (tidak memblokir respon HTTP client)
-    triggerVideoGeneration(newRecord.id, videoScript, {
-      regionLabel,
-      year: year.toString(),
-      totalValid,
-      totalAktif,
-      pctAktif,
-      totalSiklusHidup,
-      pctSiklusHidup,
-      totalKunjunganRumah: stats.totalKunjunganRumah,
-      totalLaporPustu: stats.totalLaporPustu
-    })
 
     // Ambil daftar riwayat terbaru termasuk yang baru dibuat
     const updatedHistoryList = [
@@ -700,7 +684,7 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
       detailedAnalysis: newRecord.detailedAnalysis,
       videoScript: newRecord.videoScript,
       videoUrl: newRecord.videoUrl,
-      videoStatus: 'GENERATING', // Kembalikan status sedang digenerate untuk UI
+      videoStatus: 'COMPLETED', // Kembalikan status COMPLETED langsung karena menggunakan static HeyGen embed
       createdAt: newRecord.createdAt,
       historyList: updatedHistoryList,
       cached: false,
