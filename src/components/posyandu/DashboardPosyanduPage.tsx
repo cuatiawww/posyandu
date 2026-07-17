@@ -181,6 +181,28 @@ function renderMarkdown(text: string) {
   })
 }
 
+const isYouTubeUrl = (url: string) => {
+  if (!url) return false
+  return url.includes('youtube.com') || url.includes('youtu.be')
+}
+
+const getYouTubeEmbedUrl = (url: string) => {
+  if (!url) return ''
+  let id = ''
+  if (url.includes('youtu.be/')) {
+    id = url.split('youtu.be/')[1]?.split(/[?#]/)[0]
+  } else if (url.includes('v=')) {
+    id = url.split('v=')[1]?.split('&')[0]?.split(/[?#]/)[0]
+  } else if (url.includes('embed/')) {
+    id = url.split('embed/')[1]?.split(/[?#]/)[0]
+  }
+
+  if (id) {
+    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1&loop=1&playlist=${id}`
+  }
+  return url
+}
+
 export default function DashboardPosyanduPage() {
 
   const { token, isInitialized, user } = useAuthStore()
@@ -193,7 +215,7 @@ export default function DashboardPosyanduPage() {
   const [aiRecommendations, setAiRecommendations] = useState<string[]>([])
   const [detailedAnalysis, setDetailedAnalysis] = useState<string>('')
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<'text' | 'video'>('text')
+  const [activeTab, setActiveTab] = useState<'text' | 'video' | 'info'>('text')
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
   
   // Variabel state baru untuk fitur Riwayat AI & Video Presenter
@@ -1172,12 +1194,11 @@ export default function DashboardPosyanduPage() {
 
       {/* Map + AI Insight Section */}
       <section className="w-full bg-[#fbffff] pb-5">
-        <div className="grid w-full grid-cols-1 gap-4 xl:grid-cols-[381px_minmax(0,1fr)] xl:items-start">
+        <div className="grid w-full grid-cols-1 gap-4 xl:grid-cols-[381px_minmax(0,1fr)] xl:items-stretch">
 
-          <div className="space-y-3">
             {/* ── AI Insight Card ── */}
             <article
-              className="relative overflow-hidden border border-[#b7d9d8] p-5 xl:min-h-[415px] xl:h-auto xl:w-[381px]"
+              className="relative overflow-hidden border border-[#b7d9d8] p-5 xl:h-auto xl:w-[381px] flex flex-col flex-1"
               style={{
                 backgroundImage: "url('/bg insght.png')",
                 backgroundSize: 'cover',
@@ -1192,6 +1213,7 @@ export default function DashboardPosyanduPage() {
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(237,251,250,0.72)_0%,rgba(231,247,246,0.60)_100%)]" />
 
               <div className="relative z-10 flex h-full flex-col">
+                {/* Icon + Title */}
                 <div className="flex items-start gap-3">
                   <Image
                     src="/insight.svg"
@@ -1200,88 +1222,87 @@ export default function DashboardPosyanduPage() {
                     height={52}
                     className="h-13 w-13 flex-shrink-0"
                   />
-                  <h3 className="text-base font-black leading-[1.3] text-[#1a3535] sm:text-lg">
+                  <h3 className="text-[15px] font-bold leading-[1.3] text-[#1a3535] sm:text-[17px]">
                     Analisis Penilaian Kepatuhan & Keaktifan Layanan Posyandu
                   </h3>
                 </div>
 
-                {/* Body text */}
-                <div className="mt-3 rounded-xl border-l-[3px] border-l-[#16b7b2] bg-white/60 px-3 py-2.5 backdrop-blur-[2px] overflow-y-auto max-h-[190px] min-h-[140px] flex-1">
-                  <p className="text-sm font-semibold leading-relaxed text-[#2f4040] sm:text-base whitespace-pre-line text-slate-800">
-                    {aiInsight || 'Klik tombol di bawah untuk membuat analisis.'}
-                  </p>
-                  
-                  {aiRecommendations && aiRecommendations.length > 0 && (
-                    <div className="mt-3 space-y-2 border-t border-slate-200/50 pt-2">
-                      <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Rekomendasi Utama:</p>
-                      <ul className="list-disc pl-4 space-y-1">
-                        {aiRecommendations.map((rec, i) => (
-                          <li 
-                            key={i} 
-                            className="text-xs font-semibold text-slate-700 leading-normal" 
-                            dangerouslySetInnerHTML={{ __html: rec }} 
-                          />
-                        ))}
-                      </ul>
+                {/* Video Embed Container */}
+                <div className="mt-3 relative aspect-video w-full overflow-hidden rounded-xl border border-teal-200/60 bg-black/5 shadow-inner group/video shrink-0">
+                  {videoStatus === 'COMPLETED' && videoUrl ? (
+                    isYouTubeUrl(videoUrl) ? (
+                      <iframe
+                        src={getYouTubeEmbedUrl(videoUrl)}
+                        className="h-full w-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={videoUrl}
+                        controls
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="h-full w-full object-cover"
+                      />
+                    )
+                  ) : videoStatus === 'GENERATING' || generatingAi ? (
+                    <div className="flex h-full w-full flex-col items-center justify-center bg-indigo-50/50 p-4 text-center">
+                      <div className="flex items-center gap-1 mb-2">
+                        <span className="h-3 w-1 bg-indigo-500 rounded-full animate-[bounce_1.2s_infinite_100ms]" />
+                        <span className="h-5 w-1 bg-indigo-650 rounded-full animate-[bounce_1.2s_infinite_200ms]" />
+                        <span className="h-4 w-1 bg-indigo-500 rounded-full animate-[bounce_1.2s_infinite_300ms]" />
+                        <span className="h-2 w-1 bg-indigo-400 rounded-full animate-[bounce_1.2s_infinite_400ms]" />
+                      </div>
+                      <p className="text-[11px] font-black text-indigo-700 uppercase tracking-wider">Menyiapkan Presenter AI...</p>
+                      <p className="text-[9px] font-semibold text-slate-500 mt-0.5">Sedang merender avatar video pembaca laporan</p>
+                    </div>
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center bg-slate-100/50 text-slate-400">
+                      <Video className="h-8 w-8 stroke-[1.5]" />
+                      <span className="mt-1 text-xs font-semibold">Video presenter belum siap</span>
                     </div>
                   )}
+                </div>
+
+                {/* Body text */}
+                <div className="mt-3 rounded-xl border-l-[3px] border-l-[#16b7b2] bg-white/60 px-3 py-2.5 backdrop-blur-[2px] overflow-y-auto flex-1 min-h-[140px]">
+                  <p className="text-[13px] leading-relaxed text-[#2f4040] sm:text-[14px] whitespace-pre-line text-slate-800">
+                    {aiInsight || 'Klik tombol di bawah untuk membuat analisis.'}
+                  </p>
                 </div>
 
                 {/* Divider */}
                 <div className="my-4 h-px bg-[rgba(0,0,0,0.08)]" />
 
-                <div className="mt-auto flex flex-col gap-2">
-                  {aiInsight && !generatingAi && (
-                    <button
-                      type="button"
-                      onClick={() => setIsModalOpen(true)}
-                      className="group flex w-full items-center justify-center gap-2 rounded-[14px] bg-white border border-[#4d90d0]/60 px-4 py-2.5 text-[#4d90d0] shadow-[0_2px_8px_rgba(77,144,208,0.06)] transition-all hover:bg-slate-50 hover:border-[#4d90d0] hover:-translate-y-0.5 active:scale-[0.99]"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span className="text-xs font-black uppercase tracking-[0.1em]">
-                        Lihat Analisis Lengkap
-                      </span>
-                    </button>
-                  )}
-
+                <div className="mt-auto shrink-0">
                   <button
-                    onClick={() => generateAiInsight()}
+                    onClick={() => {
+                      if (!aiInsight) {
+                        generateAiInsight()
+                      } else {
+                        setIsModalOpen(true)
+                      }
+                    }}
                     disabled={generatingAi}
-                    className="group flex w-full items-center justify-center gap-3 rounded-[14px] bg-gradient-to-r from-[#4d90d0] to-[#6c5ce7] px-4 py-3 text-white shadow-[0_4px_14px_rgba(77,144,208,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(108,92,231,0.42)] active:scale-[0.99] disabled:cursor-wait disabled:opacity-70"
+                    className="group flex w-full items-center justify-center gap-3 rounded-[14px] bg-[#047D78] hover:bg-[#03605c] px-4 py-3.5 text-white shadow-[0_4px_14px_rgba(4,125,120,0.32)] transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(4,125,120,0.42)] active:scale-[0.99] disabled:cursor-wait"
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
-                      {generatingAi ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 transition-transform group-hover:scale-110">
+                      {generatingAi ? <Loader2 className="h-4 w-4 animate-spin text-[#047D78]" /> : <Sparkles className="h-4 w-4 text-[#047D78]" />}
                     </span>
-                    <span className="text-xs font-black uppercase tracking-[0.1em]">
-                      {generatingAi ? 'Sedang Menganalisis...' : 'Analisis AI'}
+                    <span className="text-xs font-bold uppercase tracking-[0.1em]">
+                      {generatingAi ? 'Sedang Menganalisis...' : 'Lihat Analisis Lengkap'}
                     </span>
                   </button>
                 </div>
               </div>
             </article>
 
-            {/* Source card */}
-            <article
-              className="border border-[#b7c8c9] bg-[#e9f1f2] p-4 xl:min-h-[183px] xl:h-auto w-full xl:w-[381px]"
-              style={{
-                borderTopLeftRadius: '17px',
-                borderTopRightRadius: '17px',
-                borderBottomRightRadius: '22px',
-                borderBottomLeftRadius: '17px',
-              }}
-            >
-              <h4 className="text-lg font-black text-slate-800">Sumber Data:</h4>
-              <p className="mt-1 text-sm font-bold text-slate-600">
-                Kementerian Kesehatan Republik Indonesia
-              </p>
-              <h4 className="mt-4 text-lg font-black text-slate-800">Data per:</h4>
-              <p className="mt-1 text-sm font-bold text-slate-600">26 Juni 2026 10.00 WIB</p>
-            </article>
-          </div>
-
           {/* Map Card */}
           <article
-            className="border border-[#cdcdcd] bg-white p-4 xl:h-[615px]"
+            className="border border-[#cdcdcd] bg-white p-4 xl:h-auto flex flex-col flex-1"
             style={{
               borderTopLeftRadius: '17px',
               borderTopRightRadius: '17px',
@@ -1295,7 +1316,7 @@ export default function DashboardPosyanduPage() {
             <p className="mt-1 text-base font-semibold text-[#4b4b4b] sm:text-lg">
               Pemetaan geografis sebaran posyandu serta pencapaian kinerjanya (Aktif, Kunjungan Rumah, Melapor ke Pustu) di wilayah {getRegionLabel()}.
             </p>
-            <div className="mt-4 h-[300px] sm:h-[350px] md:h-[420px] xl:h-[470px]">
+            <div className="mt-4 flex-1 min-h-[300px]">
               <DisasterMap
                 markers={filteredMarkers}
                 userScope={activeUserScope}
@@ -1956,91 +1977,6 @@ export default function DashboardPosyanduPage() {
           </div>
         )}
 
-        {/* Dynamic Alert and Disclaimer Section */}
-        {(() => {
-          if (!data) return null
-
-          const totalValid = data.totalValid || 0
-          const keaktifanPct = totalValid ? Math.round((data.totalAktif / totalValid) * 100) : 0
-          const lifecyclePct = totalValid ? Math.round((data.totalSiklusHidupAktif / totalValid) * 100) : 0
-          const isMemenuhi = data.statusTarget === 'MEMENUHI'
-
-          const warnings = []
-          if (keaktifanPct < 80) {
-            warnings.push(`Tingkat keaktifan bulanan (${keaktifanPct}%) berada di bawah target standar nasional 80%`)
-          }
-          if (lifecyclePct < 60) {
-            warnings.push(`Tingkat keaktifan siklus hidup (${lifecyclePct}%) di bawah target optimal 60%`)
-          }
-          if (!isMemenuhi) {
-            warnings.push(`Pencapaian target kepatuhan (${data?.pctKabKotaMemenuhi || 0}%) belum memenuhi target nasional (${data?.targetPct || 0}%)`)
-          }
-
-          // Tentukan level keparahan (Kritis vs Siaga vs Aman)
-          let severity: 'critical' | 'warning' | 'safe' = 'safe'
-          if (keaktifanPct < 60 || lifecyclePct < 40 || (!isMemenuhi && (data.pctKabKotaMemenuhi || 0) < 10)) {
-            severity = 'critical'
-          } else if (keaktifanPct < 80 || lifecyclePct < 60 || !isMemenuhi) {
-            severity = 'warning'
-          }
-
-          return (
-            <div className="space-y-4 mb-6">
-              {/* Dynamic Alert Banner */}
-              <div className={`p-4 rounded-xl border flex gap-3 items-start ${
-                severity === 'critical'
-                  ? 'bg-rose-50 border-rose-100 text-rose-800'
-                  : severity === 'warning'
-                  ? 'bg-amber-50 border-amber-100 text-amber-800'
-                  : 'bg-emerald-50 border-emerald-100 text-emerald-800'
-              }`}>
-                {severity === 'critical' ? (
-                  <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5 animate-pulse" />
-                ) : severity === 'warning' ? (
-                  <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                ) : (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                )}
-                <div>
-                  <h5 className="font-extrabold text-sm mb-1 uppercase tracking-wide">
-                    {severity === 'critical' 
-                      ? 'Rekomendasi Utama: Perlu Perhatian Khusus (Kritis)' 
-                      : severity === 'warning'
-                      ? 'Rekomendasi Utama: Status Siaga / Perlu Antisipasi'
-                      : 'Rekomendasi Utama: Kondisi Baik & Stabil'}
-                  </h5>
-                  <p className="text-xs font-semibold leading-relaxed">
-                    {severity === 'critical'
-                      ? `Wilayah ini berada dalam kondisi KRITIS dan memerlukan intervensi darurat segera karena: ${warnings.join(', serta ')}.`
-                      : severity === 'warning'
-                      ? `Wilayah ini berada dalam status SIAGA (perlu perhatian sedang) karena: ${warnings.join(', serta ')}.`
-                      : `Kinerja Posyandu di wilayah ini dalam kondisi prima. Seluruh indikator utama (keaktifan bulanan, siklus hidup, dan pencapaian target kepatuhan) telah memenuhi target standar nasional.`}
-                  </p>
-                </div>
-              </div>
-
-              {/* Disclaimer Info Box */}
-              <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/40 text-blue-900 text-xs font-semibold space-y-2">
-                <div className="flex items-center gap-2 text-blue-700">
-                  <Info className="h-4 w-4 shrink-0" />
-                  <span className="font-black uppercase tracking-wider">Informasi Generate AI</span>
-                </div>
-                <p className="leading-relaxed">
-                  Analisis Detail AI ini merupakan hasil generate otomatis berdasarkan kalkulasi database Posyandu untuk wilayah <strong className="font-extrabold">{getRegionLabel()}</strong>. AI ini dikonfigurasi khusus hanya untuk menganalisis data dashboard <strong className="font-extrabold">{getRegionLabel()}</strong>.
-                </p>
-                {aiCreatedAt && (
-                  <p className="text-[11px] text-blue-800/80 font-bold">
-                    🕒 Yang Anda lihat saat ini adalah hasil generate AI pada tanggal <strong className="font-extrabold">{formattedAiTime}</strong>.
-                  </p>
-                )}
-                <div className="border-t border-blue-100 pt-2 text-[10px] text-blue-700/80 font-medium">
-                  <strong className="font-bold">DISCLAIMER:</strong> Semua informasi, estimasi tren, dan rekomendasi taktis yang disajikan merupakan analisis dari model AI (Google Gemini). Hasil analisis ini ditujukan sebagai referensi pembantu pengambilan keputusan dinas kesehatan setempat dan tidak menggantikan keputusan medis formal maupun regulasi resmi dari kementerian terkait.
-                </div>
-              </div>
-            </div>
-          )
-        })()}
-
         {/* Tab Switcher */}
         <div className="flex border-b border-slate-200 mb-6 gap-4">
           <button
@@ -2067,6 +2003,18 @@ export default function DashboardPosyanduPage() {
             <Video className="h-4 w-4" />
             AI Video Presenter
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('info')}
+            className={`flex items-center gap-2 pb-3 text-sm font-black uppercase tracking-wider border-b-2 transition-all ${
+              activeTab === 'info'
+                ? 'border-teal-650 text-teal-600'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <Info className="h-4 w-4" />
+            Informasi Sumber Data & AI
+          </button>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
@@ -2080,7 +2028,7 @@ export default function DashboardPosyanduPage() {
                   )}
                 </div>
               </div>
-            ) : (
+            ) : activeTab === 'video' ? (
               <div className="space-y-4">
                 {/* Video Player Box */}
                 <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 shadow-lg flex flex-col items-center justify-center p-6 text-center text-white">
@@ -2128,6 +2076,88 @@ export default function DashboardPosyanduPage() {
                   <p className="text-sm font-semibold text-slate-700 italic leading-relaxed">
                     "{videoScript || 'Membacakan ringkasan analisis untuk wilayah terpilih...'}"
                   </p>
+                </div>
+              </div>
+            ) : (
+              // activeTab === 'info'
+              <div className="space-y-4">
+                {(() => {
+                  if (!data) return null
+                  const totalValid = data.totalValid || 0
+                  const keaktifanPct = totalValid ? Math.round((data.totalAktif / totalValid) * 100) : 0
+                  const lifecyclePct = totalValid ? Math.round((data.totalSiklusHidupAktif / totalValid) * 100) : 0
+                  const isMemenuhi = data.statusTarget === 'MEMENUHI'
+
+                  const warnings = []
+                  if (keaktifanPct < 80) {
+                    warnings.push(`Tingkat keaktifan bulanan (${keaktifanPct}%) berada di bawah target standar nasional 80%`)
+                  }
+                  if (lifecyclePct < 60) {
+                    warnings.push(`Tingkat keaktifan siklus hidup (${lifecyclePct}%) di bawah target optimal 60%`)
+                  }
+                  if (!isMemenuhi) {
+                    warnings.push(`Pencapaian target kepatuhan (${data?.pctKabKotaMemenuhi || 0}%) belum memenuhi target nasional (${data?.targetPct || 0}%)`)
+                  }
+
+                  let severity: 'critical' | 'warning' | 'safe' = 'safe'
+                  if (keaktifanPct < 60 || lifecyclePct < 40 || (!isMemenuhi && (data.pctKabKotaMemenuhi || 0) < 10)) {
+                    severity = 'critical'
+                  } else if (keaktifanPct < 80 || lifecyclePct < 60 || !isMemenuhi) {
+                    severity = 'warning'
+                  }
+
+                  return (
+                    <div className={`p-5 rounded-2xl border flex gap-3.5 items-start shadow-sm leading-relaxed ${
+                      severity === 'critical'
+                        ? 'bg-rose-50 border-rose-100 text-rose-800'
+                        : severity === 'warning'
+                        ? 'bg-amber-50 border-amber-100 text-amber-800'
+                        : 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                    }`}>
+                      {severity === 'critical' ? (
+                        <AlertTriangle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5 animate-pulse" />
+                      ) : severity === 'warning' ? (
+                        <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <h5 className="font-extrabold text-sm mb-1 uppercase tracking-wide">
+                          {severity === 'critical' 
+                            ? 'Rekomendasi Utama: Perlu Perhatian Khusus (Kritis)' 
+                            : severity === 'warning'
+                            ? 'Rekomendasi Utama: Status Siaga / Perlu Antisipasi'
+                            : 'Rekomendasi Utama: Kondisi Baik & Stabil'}
+                        </h5>
+                        <p className="text-xs font-semibold">
+                          {severity === 'critical'
+                            ? `Wilayah ini berada dalam kondisi KRITIS dan memerlukan intervensi darurat segera karena: ${warnings.join(', serta ')}.`
+                            : severity === 'warning'
+                            ? `Wilayah ini berada dalam status SIAGA (perlu perhatian sedang) karena: ${warnings.join(', serta ')}.`
+                            : `Kinerja Posyandu di wilayah ini dalam kondisi prima. Seluruh indikator utama (keaktifan bulanan, siklus hidup, dan pencapaian target kepatuhan) telah memenuhi target standar nasional.`}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Disclaimer Info Box */}
+                <div className="p-5 rounded-2xl border border-blue-100 bg-blue-50/20 text-blue-900 text-xs font-semibold space-y-3.5 shadow-sm leading-relaxed">
+                  <div className="flex items-center gap-2 text-blue-700">
+                    <Info className="h-4 w-4 shrink-0" />
+                    <span className="font-black uppercase tracking-wider">Informasi Generate AI</span>
+                  </div>
+                  <p className="text-slate-700 font-medium">
+                    Analisis Detail AI ini merupakan hasil generate otomatis berdasarkan kalkulasi database Posyandu untuk wilayah <strong className="font-extrabold">{getRegionLabel()}</strong>. AI ini dikonfigurasi khusus hanya untuk menganalisis data dashboard <strong className="font-extrabold">{getRegionLabel()}</strong>.
+                  </p>
+                  {aiCreatedAt && (
+                    <p className="text-[11px] text-blue-800/80 font-bold flex items-center gap-1.5 bg-blue-50/50 p-2 rounded-lg border border-blue-100">
+                      🕒 Yang Anda lihat saat ini adalah hasil generate AI pada tanggal <strong className="font-extrabold">{formattedAiTime}</strong>.
+                    </p>
+                  )}
+                  <div className="border-t border-blue-100 pt-3 text-[10.5px] text-blue-700/80 font-medium leading-relaxed">
+                    <strong className="font-bold">DISCLAIMER:</strong> Semua informasi, estimasi tren, dan rekomendasi taktis yang disajikan merupakan analisis dari model AI (Google Gemini). Hasil analisis ini ditujukan sebagai referensi pembantu pengambilan keputusan dinas kesehatan setempat dan tidak menggantikan keputusan medis formal maupun regulasi resmi dari kementerian terkait.
+                  </div>
                 </div>
               </div>
             )}
