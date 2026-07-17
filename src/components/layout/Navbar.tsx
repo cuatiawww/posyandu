@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, LayoutDashboard, Menu, X, Users } from 'lucide-react'
+import { ChevronRight, LayoutDashboard, Menu, X, Users, Clock } from 'lucide-react'
 
 const menuItems = [
   {
@@ -20,6 +20,13 @@ const menuItems = [
     href: '/dashboard-kader',
     icon: Users,
     match: (pathname: string) => pathname.startsWith('/dashboard-kader'),
+  },
+  {
+    label: 'LOG AI',
+    shortLabel: 'Log AI',
+    href: '/log-ai',
+    icon: Clock,
+    match: (pathname: string) => pathname.startsWith('/log-ai'),
   },
 ]
 

@@ -39,6 +39,7 @@ const sidebarMenu = [
     items: [
       { label: 'Dashboard Posyandu', href: '/', icon: LayoutDashboard },
       { label: 'Dashboard Kader', href: '/dashboard-kader', icon: Users },
+      { label: 'LOG AI', href: '/log-ai', icon: Clock },
     ],
   },
   {
