@@ -10,14 +10,15 @@ async function generateVideoScript(summary: string, apiKey: string | undefined):
     try {
       const prompt = `
 Ubah laporan analisis kesehatan berikut menjadi sebuah naskah presentasi video singkat (durasi sekitar 30-45 detik, maksimal 100-120 kata). 
-Naskah harus ditulis dalam bahasa Indonesia yang santun, profesional, dan mudah dipahami, seolah-olah dibacakan oleh pembawa berita atau presenter virtual.
+Naskah harus ditulis dalam Bahasa Indonesia yang baku, profesional, modern, rapi, dan berwibawa seolah-olah dibacakan oleh pembawa berita televisi nasional.
+Gunakan tempo bicara yang relatif cepat (seperti presenter berita televisi), namun tetap jelas dan mudah dipahami. Artikulasi harus sangat jelas dengan intonasi yang dinamis (tidak monoton) serta memberikan penekanan yang kuat pada angka, fakta, dan kesimpulan penting.
 Jangan gunakan format markdown, bullet points, list, tanda bintang (*), atau simbol-simbol khusus. Berikan naskah teks polos langsung dibacakan.
 
 Laporan Analisis:
 ${summary}
 `
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
@@ -45,12 +46,12 @@ ${summary}
   return `Halo Bapak Ibu sekalian. Berikut adalah ringkasan analisis Posyandu secara nasional. ${summary.replace(/[#*_\-`]/g, '')} Terima kasih atas perhatian Anda, mari kita tingkatkan kualitas pelayanan Posyandu bersama-sama.`
 }
 
-// Helper untuk mentrigger pembuatan video avatar menggunakan API D-ID atau simulasi demo
+// Helper untuk mentrigger pembuatan video avatar menggunakan API HeyGen atau simulasi demo
 async function triggerVideoGeneration(insightId: string, scriptText: string) {
-  const apiKey = process.env.DID_API_KEY
+  const apiKey = process.env.HEYGEN_API_KEY
 
-  if (!apiKey || apiKey === 'MASUKKAN_API_KEY_D_ID_ANDA_DI_SINI' || apiKey.trim() === '') {
-    console.log('[VIDEO] [CRON] No DID_API_KEY found. Simulating video generation in Demo Mode.')
+  if (!apiKey || apiKey === 'MASUKKAN_API_KEY_HEYGEN_ANDA_DI_SINI' || apiKey.trim() === '') {
+    console.log('[VIDEO] [CRON] No HEYGEN_API_KEY found. Simulating video generation in Demo Mode.')
     // Simulasikan pembuatan video asinkron (selesai setelah 5 detik)
     setTimeout(async () => {
       try {
@@ -61,7 +62,7 @@ async function triggerVideoGeneration(insightId: string, scriptText: string) {
             videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-doctor-explaining-something-on-a-digital-tablet-41225-large.mp4',
           },
         })
-        console.log('[VIDEO] [CRON] Simulated D-ID video generation completed for:', insightId)
+        console.log('[VIDEO] [CRON] Simulated HeyGen video generation completed for:', insightId)
       } catch (err) {
         console.error('[VIDEO] [CRON] Failed to update simulated video status:', err)
       }
@@ -71,48 +72,71 @@ async function triggerVideoGeneration(insightId: string, scriptText: string) {
   }
 
   try {
-    const response = await fetch('https://api.d-id.com/talks', {
+    const avatarId = process.env.HEYGEN_AVATAR_ID || 'Wayland_front_suit_20240801'
+    const voiceId = process.env.HEYGEN_VOICE_ID || 'id-ID-ArdiNeural'
+    const backgroundUrl = process.env.HEYGEN_BACKGROUND_URL || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920'
+
+    console.log('[VIDEO] [CRON] Triggering HeyGen video generation:', { avatarId, voiceId, backgroundUrl })
+
+    const response = await fetch('https://api.heygen.com/v2/video/generate', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${Buffer.from(apiKey + ':').toString('base64')}`,
+        'X-Api-Key': apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        script: {
-          type: 'text',
-          input: scriptText,
-          provider: {
-            type: 'microsoft',
-            voice_id: 'id-ID-GadisNeural', // Suara wanita Indonesia
+        video_inputs: [
+          {
+            character: {
+              type: 'avatar',
+              avatar_id: avatarId,
+              avatar_style: 'normal',
+            },
+            voice: {
+              type: 'text',
+              input_text: scriptText,
+              voice_id: voiceId,
+              speed: 1.0,
+            },
+            background: {
+              type: 'image',
+              url: backgroundUrl,
+            },
           },
+        ],
+        dimension: {
+          width: 1920,
+          height: 1080,
         },
-        source_url: 'https://d-id-public-bucket.s3.us-west-2.amazonaws.com/alice.jpg', // S3 bucket resmi D-ID yang dijamin didukung
-        config: {
-          fluent: true,
-          pad_audio: 0,
-        },
+        title: 'Analisis Kinerja Posyandu AI',
+        caption: false,
       }),
     })
 
     if (!response.ok) {
       const errText = await response.text()
-      throw new Error(`D-ID API response error: ${response.status} - ${errText}`)
+      throw new Error(`HeyGen API response error: ${response.status} - ${errText}`)
     }
 
-    const data = await response.json()
-    console.log('[VIDEO] [CRON] D-ID video generation triggered successfully:', data)
+    const resJson = await response.json()
+    console.log('[VIDEO] [CRON] HeyGen video generation response:', resJson)
+
+    const videoId = resJson.data?.video_id || resJson.video_id
+    if (!videoId) {
+      throw new Error(`Failed to retrieve video_id from HeyGen response: ${JSON.stringify(resJson)}`)
+    }
 
     await prisma.aIInsightHistory.update({
       where: { id: insightId },
       data: {
-        videoJobId: data.id,
+        videoJobId: videoId,
         videoStatus: 'GENERATING',
       },
     })
 
-    return { jobId: data.id, status: 'GENERATING' }
+    return { jobId: videoId, status: 'GENERATING' }
   } catch (error) {
-    console.error('[VIDEO] [CRON] Error triggering D-ID video generation:', error)
+    console.error('[VIDEO] [CRON] Error triggering HeyGen video generation:', error)
     await prisma.aIInsightHistory.update({
       where: { id: insightId },
       data: {
@@ -209,7 +233,18 @@ export async function GET(req: NextRequest) {
       try {
         const prompt = `
 Anda adalah seorang AI Health Policy Analyst Senior untuk Kementerian Kesehatan Republik Indonesia.
-Tugas Anda adalah menganalisis data kepatuhan dan keaktifan layanan Posyandu berdasarkan indikator kinerja nasional terbaru.
+Tugas Anda adalah menganalisis data kepatuhan dan keaktifan layanan Posyandu berdasarkan indikator kinerja nasional terbaru serta riset kesehatan terpercaya.
+
+INSTRUKSI RISET KREDIBEL SEBELUM ANALISIS:
+Sebelum Anda melakukan analisis data dashboard dan menghasilkan output JSON, Anda WAJIB melakukan riset terlebih dahulu menggunakan Google Search.
+Lakukan pencarian pada situs-situs berikut:
+1. Situs pemerintahan Indonesia yang kredibel terkait kesehatan (seperti kemkes.go.id, bps.go.id, atau domain .go.id resmi lainnya).
+2. Website resmi WHO (who.int).
+3. Website resmi UNICEF (unicef.org).
+
+Topik riset Anda harus mencakup:
+- Standar, pedoman, target, kebijakan terbaru, atau data statistik pembanding terkait Posyandu, kesehatan ibu dan anak (KIA), stunting, kunjungan rumah oleh kader, atau integrasi pelayanan kesehatan primer (ILP) di Indonesia.
+- Bandingkan data riil dari dashboard Posyandu di bawah dengan standar/target nasional atau global yang Anda temukan melalui riset tersebut.
 
 Berikut adalah data dashboard Posyandu saat ini:
 - Wilayah Analisis: Nasional
@@ -234,9 +269,9 @@ SEBARAN SPASIAL POSYANDU:
 ${spatialSummary}
 
 Berdasarkan data di atas, tolong hasilkan analisis terperinci yang mencakup:
-1. Ringkasan Singkat (summary): 3-4 kalimat ringkas mengenai status keaktifan dan pencapaian target saat ini.
+1. Ringkasan Singkat (summary): 3-4 kalimat ringkas mengenai status keaktifan, pencapaian target saat ini, serta intisari temuan riset kesehatan eksternal yang relevan.
 2. Rekomendasi Aksi Konkret (recommendations - 4 Rekomendasi): Berikan rekomendasi spesifik untuk pemangku kebijakan setempat. Format masing-masing rekomendasi harus berupa judul singkat (diapit tag <strong>) diikuti penjelasan tindakan konkret.
-3. Analisis Terperinci (detailedAnalysis): Penjelasan mendalam dalam format Markdown. Analisis ini harus mengevaluasi kekuatan wilayah, kelemahan/kesenjangan terbesar, analisis spasial wilayah kritis (mengacu pada data spasial), serta peta jalan strategis jangka pendek untuk meningkatkan pencapaian target. Gunakan format Markdown yang menarik dan profesional (headers, bold text, bullet points).
+3. Analisis Terperinci (detailedAnalysis): Penjelasan mendalam dalam format Markdown. Analisis ini WAJIB diawali dengan heading '## Ringkasan Riset & Pembanding Standar (Kemenkes/WHO/UNICEF)' yang berisi ringkasan hasil riset Anda dari situs-situs kredibel tersebut beserta pembanding data riil dashboard Anda. Kemudian lanjutkan dengan evaluasi kekuatan wilayah, kelemahan/kesenjangan terbesar, analisis spasial wilayah kritis (mengacu pada data spasial), serta peta jalan strategis jangka pendek untuk meningkatkan pencapaian target. Gunakan format Markdown yang menarik dan profesional (headers, bold text, bullet points).
 
 Kembalikan respon hanya dalam format JSON dengan struktur berikut:
 {
@@ -252,7 +287,7 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
 `
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: {
@@ -260,6 +295,11 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
             },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
+              tools: [
+                {
+                  googleSearch: {}
+                }
+              ],
               generationConfig: {
                 responseMimeType: 'application/json',
               },
@@ -294,6 +334,13 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
         `<strong>Integrasi Pelaporan Pustu</strong> - Sempurnakan sistem pencatatan kunjungan rumah agar pelaporan ke Pustu terkirim secara tepat waktu.`
       ]
       detailedAnalysisText = `# Analisis Penilaian Kepatuhan & Keaktifan Layanan Posyandu - NASIONAL (Cron)
+
+## Ringkasan Riset & Pembanding Standar (Kemenkes/WHO/UNICEF)
+*(Mode Fallback Offline/Rate Limit)*
+Berdasarkan tinjauan pedoman **Kementerian Kesehatan RI (Kemenkes)** terkait Integrasi Pelayanan Kesehatan Primer (ILP), target keaktifan Posyandu nasional ditetapkan minimal **80%** secara konsisten setiap bulan. Organisasi Kesehatan Dunia (**WHO**) dan **UNICEF** menegaskan pentingnya pemantauan tumbuh kembang di tingkat komunitas untuk mencegah stunting secara dini, di mana kunjungan rumah oleh kader harus mencakup seluruh keluarga sasaran.
+- Standar Keaktifan Nasional: **80%** (Wilayah Anda saat ini: **${pctAktif}%**).
+- Standar Layanan Siklus Hidup Terintegrasi: **75%** (Wilayah Anda saat ini: **${pctSiklusHidup}%**).
+- Penyelarasan Temuan: Cakupan kunjungan rumah saat ini menunjukkan perlunya optimalisasi kompetensi kader agar sejalan dengan standar kunjungan rumah berkualitas dari UNICEF.
 
 ## Ringkasan Kinerja Eksekutif (Pre-Generated)
 Berdasarkan data filter tahun **${defaultYear}**, kinerja posyandu secara nasional tercatat memiliki **${totalValid.toLocaleString('id-ID')}** unit terdaftar dengan status keaktifan operasional bulanan sebesar **${pctAktif}%** (${totalAktif.toLocaleString('id-ID')} aktif) dan layanan Siklus Hidup Aktif sebesar **${pctSiklusHidup}%** (${totalSiklusHidup.toLocaleString('id-ID')} aktif).

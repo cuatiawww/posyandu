@@ -488,6 +488,7 @@ export default function DashboardPosyanduPage() {
           timeFrame: selectedTimeframe,
           period: selectedPeriod,
           historyId,
+          force: !historyId,
         }),
       })
 
