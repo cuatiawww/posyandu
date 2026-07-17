@@ -6,44 +6,7 @@ export const runtime = 'nodejs'
 
 // Helper untuk menyederhanakan teks analisis menjadi naskah presenter video AI
 async function generateVideoScript(summary: string, apiKey: string | undefined): Promise<string> {
-  if (apiKey && apiKey !== 'AIzaSyYourActualKeyHereIfProvided' && apiKey.trim() !== '') {
-    try {
-      const prompt = `
-Ubah laporan analisis kesehatan berikut menjadi sebuah naskah presentasi video singkat (durasi sekitar 30-45 detik, maksimal 100-120 kata). 
-Naskah harus ditulis dalam Bahasa Indonesia yang baku, profesional, modern, rapi, dan berwibawa seolah-olah dibacakan oleh pembawa berita televisi nasional.
-Gunakan tempo bicara yang relatif cepat (seperti presenter berita televisi), namun tetap jelas dan mudah dipahami. Artikulasi harus sangat jelas dengan intonasi yang dinamis (tidak monoton) serta memberikan penekanan yang kuat pada angka, fakta, dan kesimpulan penting.
-Jangan gunakan format markdown, bullet points, list, tanda bintang (*), atau simbol-simbol khusus. Berikan naskah teks polos langsung dibacakan.
-
-Laporan Analisis:
-${summary}
-`
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        }
-      )
-
-      if (response.ok) {
-        const responseData = await response.json()
-        const scriptText = responseData.candidates?.[0]?.content?.parts?.[0]?.text
-        if (scriptText) {
-          return scriptText.trim()
-        }
-      }
-    } catch (err) {
-      console.error('[SCRIPT] Failed to generate script via Gemini:', err)
-    }
-  }
-
-  // Fallback jika API Key kosong/gagal
-  return `Halo Bapak Ibu sekalian. Berikut adalah ringkasan analisis Posyandu secara nasional. ${summary.replace(/[#*_\-`]/g, '')} Terima kasih atas perhatian Anda, mari kita tingkatkan kualitas pelayanan Posyandu bersama-sama.`
+  return "Maaf saat ini naskah belum tersedia"
 }
 
 // Helper untuk membuat gambar composite presenter (studio + panel info + presenter)
@@ -473,7 +436,7 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
 }
 `
 
-        const response = await fetch(
+        let response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
           {
             method: 'POST',
@@ -494,6 +457,26 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
           }
         )
 
+        // Retry without search tool if 429 quota error or other issues occur
+        if (!response.ok) {
+          console.warn(`[CRON] Gemini call with search tools failed (status ${response.status}). Retrying without search tools...`)
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                  responseMimeType: 'application/json',
+                },
+              }),
+            }
+          )
+        }
+
         if (response.ok) {
           const responseData = await response.json()
           const textResponse = responseData.candidates?.[0]?.content?.parts?.[0]?.text
@@ -510,38 +493,14 @@ Kembalikan respon hanya dalam format JSON dengan struktur berikut:
       }
     }
 
-    // Heuristics Fallback jika API Key kosong/gagal
+    // Fallback jika API Key tidak ada atau gagal
     if (!generatedSuccessfully) {
-      console.warn('[CRON] Using fallback heuristics.')
-      summaryText = `Analisis tata kelola Posyandu di wilayah NASIONAL (${defaultYear}) menunjukkan keaktifan operasional bulanan sebesar ${pctAktif}%.`
+      console.warn('[CRON] Gemini API failed completely. Returning user-facing error message.')
+      summaryText = 'maaf api tidak tersedia, silahkan refresh kembali'
       recommendationsArr = [
-        `<strong>Optimalisasi Keaktifan Operasional</strong> - Koordinasikan dengan Puskesmas pembina untuk menaikkan persentase keaktifan bulanan wilayah yang masih di bawah 80%.`,
-        `<strong>Pelatihan Layanan Siklus Hidup</strong> - Selenggarakan bimtek kader terpadu agar Posyandu mampu melayani seluruh sasaran usia (balita s.d. lansia).`,
-        `<strong>Peningkatan Kepatuhan Target</strong> - Lakukan monitoring bulanan berjenjang di tingkat kecamatan dan kelurahan untuk memantau target nasional (${stats.targetPct}%).`,
-        `<strong>Integrasi Pelaporan Pustu</strong> - Sempurnakan sistem pencatatan kunjungan rumah agar pelaporan ke Pustu terkirim secara tepat waktu.`
+        '<strong>Error</strong> - maaf api tidak tersedia, silahkan refresh kembali'
       ]
-      detailedAnalysisText = `# Analisis Penilaian Kepatuhan & Keaktifan Layanan Posyandu - NASIONAL (Cron)
-
-## Ringkasan Riset & Pembanding Standar (Kemenkes/WHO/UNICEF)
-*(Mode Fallback Offline/Rate Limit)*
-Berdasarkan tinjauan pedoman **Kementerian Kesehatan RI (Kemenkes)** terkait Integrasi Pelayanan Kesehatan Primer (ILP), target keaktifan Posyandu nasional ditetapkan minimal **80%** secara konsisten setiap bulan. Organisasi Kesehatan Dunia (**WHO**) dan **UNICEF** menegaskan pentingnya pemantauan tumbuh kembang di tingkat komunitas untuk mencegah stunting secara dini, di mana kunjungan rumah oleh kader harus mencakup seluruh keluarga sasaran.
-- Standar Keaktifan Nasional: **80%** (Wilayah Anda saat ini: **${pctAktif}%**).
-- Standar Layanan Siklus Hidup Terintegrasi: **75%** (Wilayah Anda saat ini: **${pctSiklusHidup}%**).
-- Penyelarasan Temuan: Cakupan kunjungan rumah saat ini menunjukkan perlunya optimalisasi kompetensi kader agar sejalan dengan standar kunjungan rumah berkualitas dari UNICEF.
-
-## Ringkasan Kinerja Eksekutif (Pre-Generated)
-Berdasarkan data filter tahun **${defaultYear}**, kinerja posyandu secara nasional tercatat memiliki **${totalValid.toLocaleString('id-ID')}** unit terdaftar dengan status keaktifan operasional bulanan sebesar **${pctAktif}%** (${totalAktif.toLocaleString('id-ID')} aktif) dan layanan Siklus Hidup Aktif sebesar **${pctSiklusHidup}%** (${totalSiklusHidup.toLocaleString('id-ID')} aktif).
-
-## Analisis Kesenjangan & Wilayah Kritis
-Terdapat beberapa wilayah yang menunjukkan kinerja kritis di bawah ambang batas standar nasional keaktifan (80%) dan siklus hidup aktif (75%):
-${spatialSummary}
-
-## Peta Jalan Strategis & Rekomendasi
-Untuk mendorong akselerasi pencapaian target nasional sebesar **${stats.targetPct}%**, Kementerian Kesehatan menyarankan langkah taktis berikut:
-1. **Penguatan Insentif & Kapasitas Kader**: Melakukan rekrutmen serta penyegaran kapasitas kader secara masif.
-2. **Standardisasi Alat Antropometri**: Memastikan setiap unit Posyandu memiliki alat timbang/ukur standar kementerian.
-3. **Penyelarasan Logistik PMT**: Meningkatkan distribusi Bahan PMT (Pemberian Makanan Tambahan) lokal berbasis gizi seimbang.
-`
+      detailedAnalysisText = 'maaf api tidak tersedia, silahkan refresh kembali'
     }
 
     const videoScript = await generateVideoScript(summaryText, apiKey)
@@ -560,7 +519,26 @@ Untuk mendorong akselerasi pencapaian target nasional sebesar **${stats.targetPc
         videoScript,
         videoStatus: 'PENDING',
       },
-    })
+    });
+
+    // Clean up old records for the same region + period, keeping only the latest one
+    try {
+      await prisma.aIInsightHistory.deleteMany({
+        where: {
+          province: cacheKey.province,
+          kabupaten: cacheKey.kabupaten,
+          year: cacheKey.year,
+          timeFrame: cacheKey.timeFrame,
+          period: cacheKey.period,
+          id: {
+            not: newRecord.id
+          }
+        }
+      });
+      console.log(`[CRON DB] Cleaned up older AI insights for ${cacheKey.province} - ${cacheKey.kabupaten}, keeping only: ${newRecord.id}`);
+    } catch (cleanErr) {
+      console.error('[CRON DB ERROR] Failed to clean up old AI insights:', cleanErr);
+    }
 
     // Trigger video generator secara asinkron
     triggerVideoGeneration(newRecord.id, videoScript, {
@@ -573,12 +551,12 @@ Untuk mendorong akselerasi pencapaian target nasional sebesar **${stats.targetPc
       pctSiklusHidup,
       totalKunjunganRumah: stats.totalKunjunganRumah,
       totalLaporPustu: stats.totalLaporPustu
-    })
+    });
 
-    return NextResponse.json({ success: true, message: 'New historical insight generated successfully.', id: newRecord.id })
+    return NextResponse.json({ success: true, message: 'New historical insight generated successfully.', id: newRecord.id });
 
   } catch (error) {
-    console.error('[CRON ERROR] Failed to warm cache:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    console.error('[CRON ERROR] Failed to warm cache:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
